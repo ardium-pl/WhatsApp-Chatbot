@@ -2,3 +2,6 @@
 /public
 /testing
 .env
+scratch.js
+scratch2.js
+LangChain_testing.js

@@ -1,16 +1,81 @@
 import express from "express";
 import axios from "axios";
+import { config } from "dotenv";
+import {
+  HumanMessage,
+  AIMessage,
+  SystemMessage,
+} from "@langchain/core/messages";
+import { StringOutputParser } from "@langchain/core/output_parsers";
+import { RunnableSequence } from "@langchain/core/runnables";
+import { ChatOpenAI } from "@langchain/openai";
 
+// Create an express app
 const app = express();
 app.use(express.json());
 
 // Load environment variables
-const { WEBHOOK_VERIFY_TOKEN, PHONE_NUMBER_ID, ACCESS_TOKEN, PORT } =
-  process.env;
+config();
+const {
+  WEBHOOK_VERIFY_TOKEN,
+  PHONE_NUMBER_ID,
+  ACCESS_TOKEN,
+  OPENAI_API_KEYPORT,
+} = process.env;
 
-// Define message text
-const messageContent = "Yooo man";
+const MESSAGE_HISTORY_LENGTH = 4;
+const MODEL_OUTPUT_LENGTH = 5; // In words
 
+// LangChain model
+const model = new ChatOpenAI({
+  model: "gpt-4o-mini",
+  temperature: 0.2,
+  maxTokens: 5,
+});
+
+// const chain = RunnableSequence.from([model, new StringOutputParser()]);
+
+const taskWithHistory = new SystemMessage(
+  `Answer using no more than ${MODEL_OUTPUT_LENGTH} words taking into account the following chat history.`
+);
+
+const taskWithoutHistory = new SystemMessage(
+  `Answer using no more than ${MODEL_OUTPUT_LENGTH} words.`
+);
+
+let chatHistory = [];
+
+async function generateAIresponse(messageContent) {
+  const userQuestion = new HumanMessage(messageContent);
+  let responseAI;
+
+  if (chatHistory.length > 0) {
+    responseAI = await model.invoke([
+      taskWithHistory,
+      ...chatHistory,
+      userQuestion,
+    ]);
+  } else {
+    responseAI = await model.invoke([taskWithoutHistory, userQuestion]);
+  }
+
+  // update chat history
+  responseAI = new AIMessage(responseAI.content);
+
+  if (chatHistory.length >= MESSAGE_HISTORY_LENGTH) {
+    chatHistory.shift();
+  }
+  chatHistory.push(userQuestion);
+
+  if (chatHistory.length >= MESSAGE_HISTORY_LENGTH) {
+    chatHistory.shift();
+  }
+  chatHistory.push(responseAI);
+
+  return responseAI.content;
+}
+
+//  Express routes
 app.post("/webhook", async (req, res) => {
   const message = req.body.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
 
@@ -21,12 +86,19 @@ app.post("/webhook", async (req, res) => {
 
     // check if the incoming message contains text
     if (message?.type === "text") {
+      const messageContent = message.text.body;
+
       console.log("Received a POST request containing a text message.");
-      console.log(`Message text: ${message.text.body}`);
-      console.log(`Sending response message: ${messageContent}\n`);
+      console.log(`Message text: ${messageContent}`);
 
       // Construct & send the response message
       const url = `https://graph.facebook.com/v20.0/${PHONE_NUMBER_ID}/messages`;
+
+      try {
+        const responseFromAI = generateAIresponse(messageContent);
+      } catch (err) {
+        const responseFromAI = "Error generating the response.";
+      }
 
       const data = {
         messaging_product: "whatsapp",
@@ -35,7 +107,7 @@ app.post("/webhook", async (req, res) => {
         type: "text",
         text: {
           preview_url: false,
-          body: messageContent,
+          body: responseFromAI, // Send back the AI response
         },
       };
 
