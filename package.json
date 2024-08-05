@@ -2,6 +2,7 @@
   "name": "whatsapp_chatbot",
   "version": "1.0.0",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "start": "node server/src/index.js",
     "build": "cd server/src && npm install"
