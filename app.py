@@ -79,7 +79,7 @@ def get_ai_response():
 @app.get('/webhook')
 def verify_webhook():
     try:
-        mode = request.args.get('hub.query')
+        mode = request.args.get('hub.mode')
         token = request.args.get('hub.token')
         challenge = request.args.get('hub.challenge')
 
