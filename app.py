@@ -80,10 +80,10 @@ def get_ai_response():
 def verify_webhook():
     try:
         mode = request.args.get('hub.mode')
-        token = request.args.get('hub.token')
+        verify_token = request.args.get('hub.verify_token')
         challenge = request.args.get('hub.challenge')
 
-        if mode == 'subscribe' and token == WEBHOOK_VERIFY_TOKEN:
+        if mode == 'subscribe' and verify_token == WEBHOOK_VERIFY_TOKEN:
             print('✅ Webhook verified successfully!')
             return challenge, 200
         else:
