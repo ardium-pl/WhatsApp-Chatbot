@@ -1,15 +1,13 @@
 from flask import Flask, request
-from dotenv import load_dotenv
 import requests
 import os
 
 # Load environment variables
-load_dotenv()
 WEBHOOK_VERIFY_TOKEN = os.environ.get('WEBHOOK_VERIFY_TOKEN')
 PHONE_NUMBER_ID = os.environ.get('PHONE_NUMBER_ID')
 ACCESS_TOKEN = os.environ.get('ACCESS_TOKEN')
 META_ENDPOINT = os.environ.get('META_ENDPOINT')
-PORT = os.environ.get('PORT')
+PORT = os.environ.get('PORT', 5000)
 
 app = Flask(__name__)
 chat_history = []
@@ -99,4 +97,3 @@ def verify_webhook():
 
 if __name__ == '__main__':
     app.run(port=PORT, debug=False)
-
