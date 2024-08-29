@@ -33,13 +33,17 @@ Azure-db-test2/
 │   ├── parser_org.py
 │   └── test1.pdf
 ├── queries/
-│   ├── .env
+├── .env
 │   ├── .env.example
 │   ├── output_with_embeddings.json
 │   └── semantic_vector_search.py
 ├── rag-like-capabilities/
 │   └── templates/
 │       └── index.html
+├── whatsupp/
+│   └── demo.py
+│   ├── .env
+│   └── .env.example
 ├── .env
 ├── .env.example
 ├── fin_euvic.py
