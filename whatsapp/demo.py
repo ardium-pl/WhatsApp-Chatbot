@@ -164,7 +164,7 @@ Presentation content:
 
 
 # RAG function
-def rag_with_vector_search(collection, question, num_results=2):
+def rag_with_vector_search(collection, question, num_results=4):
     results = vector_search(collection, question, num_results=num_results)
     context = ""
     for result in results:
