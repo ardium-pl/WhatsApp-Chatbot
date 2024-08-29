@@ -3,11 +3,9 @@ gunicorn
 python-dotenv
 requests
 pymongo
-dotenv
 openai
 tenacity
 flask
 logging
-pprint
 datetime
 requests
