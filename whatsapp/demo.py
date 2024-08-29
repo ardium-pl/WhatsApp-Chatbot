@@ -96,7 +96,7 @@ def generate_embeddings(text: str):
 
 
 # Vector search function
-def vector_search(collection, query, num_results=2):
+def vector_search(collection, query, num_results=4):
     query_embedding = generate_embeddings(query)
     try:
         results = collection.aggregate([
