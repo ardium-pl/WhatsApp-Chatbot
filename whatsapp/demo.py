@@ -96,7 +96,7 @@ def generate_embeddings(text: str):
 
 
 # Vector search function
-def vector_search(collection, query, num_results=4):
+def vector_search(collection, query, num_results=10):
     query_embedding = generate_embeddings(query)
     try:
         results = collection.aggregate([
@@ -164,7 +164,7 @@ Presentation content:
 
 
 # RAG function
-def rag_with_vector_search(collection, question, num_results=4):
+def rag_with_vector_search(collection, question, num_results=10):
     results = vector_search(collection, question, num_results=num_results)
     context = ""
     for result in results:
