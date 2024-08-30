@@ -1,126 +1,165 @@
-# Azure-db-test2 Project Documentation
+# WhatsApp Chatbot with RAG
+
+This project implements a WhatsApp chatbot using Flask, integrated with OpenAI's GPT model and MongoDB for Retrieval-Augmented Generation (RAG). The bot can answer questions based on information stored in a MongoDB database.
+
+## Features
+
+- WhatsApp message handling
+- Integration with OpenAI's GPT model for natural language processing
+- MongoDB integration for storing and retrieving context
+- Vector search for relevant information retrieval
+- Webhook verification for WhatsApp API
+- Retrieval-Augmented Generation (RAG) for context-aware responses
+- Error handling and logging
+
+## Prerequisites
+
+- Python 3.7+
+- Flask
+- PyMongo
+- OpenAI Python Client
+- Requests
+- python-dotenv
+- A WhatsApp Business Account
+- An OpenAI API key
+- A MongoDB database (Azure Cosmos DB with MongoDB API)
+
+## Installation
+
+1. Clone the repository:
+   ```
+   git clone https://github.com/your-username/whatsapp-chatbot.git
+   cd whatsapp-chatbot
+   ```
+
+2. Install the required packages:
+   ```
+   pip install -r requirements.txt
+   ```
+
+3. Set up your environment variables (see Environment Variables section below).
+
+## Configuration
+
+Create a `.env` file in the root directory and add the following environment variables:
+
+```
+# See .env.example for a complete list of required variables
+```
+
+## Usage
+
+1. Start the Flask server:
+   ```
+   python demo.py
+   ```
+
+2. Set up your WhatsApp Business API to forward messages to your webhook URL.
+
+3. The bot will now respond to incoming WhatsApp messages using the RAG system.
 
 ## Project Structure
 
 ```
-Azure-db-test2/
-├── connection-upload/
-│   ├── .env
-│   ├── .env.example
-│   ├── connection_test.py
-│   ├── CRUD_operations.py
-│   ├── GUI_alternative.py
-│   └── GUI_CRUD.py
-├── json_embeddings/
-│   ├── .env
-│   ├── .env.example
-│   ├── embeddings_ada_002.py
-│   └── output_test.json
-├── json_embeddings_azure/
-│   ├── .env
-│   ├── .env.example
-│   ├── implementation_full_euvic.py
-│   ├── output_test.json
-│   └── test.json
-├── multi_parser/
-│   ├── .env
-│   ├── .env.example
-│   ├── automated_parsed_typed.py
-│   ├── automated_parser.py
-│   ├── automated_parser_viz.py
-│   ├── Euvic_test_prez.pdf
-│   ├── output_v1.json
-│   ├── parser_org.py
-│   └── test1.pdf
-├── queries/
-├── .env
-│   ├── .env.example
-│   ├── output_with_embeddings.json
-│   └── semantic_vector_search.py
-├── rag-like-capabilities/
-│   └── templates/
-│       └── index.html
-├── whatsupp/
-│   └── demo.py
-│   ├── .env
-│   └── .env.example
-├── .env
-├── .env.example
-├── fin_euvic.py
-├── rag_like_corrected.py
-├── rag_like_slow.py
-├── rag_on_json_testing.py
-├── viz_test.py
-├── LICENSE
-└── README.md
+whatsapp-chatbot/
+│
+├── whatsapp/
+│   ├── __init__.py
+│   ├── demo.py              # Main application file
+│   ├── .env                 # Environment variables (not in version control)
+│   ├── .env.example         # Example environment variables
+│   └── railway.json         # Railway deployment configuration
+│
+├── .gitignore               # Git ignore file
+├── README.md                # Project documentation
+├── requirements.txt         # Python dependencies
+└── railway.json             # Railway deployment configuration
 ```
 
-## Folder Descriptions
+## Detailed Component Descriptions
 
-### connection-upload/
-Ten folder zawiera pliki związane z połączeniem do bazy danych i operacjami CRUD.
+### demo.py
 
-- `connection_test.py`: Skrypt do testowania połączenia z bazą danych.
-- `CRUD_operations.py`: Implementacja podstawowych operacji CRUD.
-- `GUI_alternative.py` i `GUI_CRUD.py`: Alternatywne implementacje GUI dla operacji CRUD.
+This is the main application file containing:
+- Flask application setup
+- MongoDB connection and operations
+- OpenAI API integration
+- WhatsApp message handling logic
+- RAG implementation
+- Webhook routes for incoming messages and verification
 
-### json_embeddings/
-Folder ten zawiera pliki związane z generowaniem embeddings dla danych JSON.
+### railway.json
 
-- `embeddings_ada_002.py`: Skrypt do generowania embeddings przy użyciu modelu Ada-002.
-- `output_test.json`: Plik wyjściowy z wynikami embeddings.
+Configuration file for deployment on Railway platform, specifying:
+- Build settings
+- Start command
+- Restart policy
 
-### json_embeddings_azure/
-Ten folder zawiera implementację embeddings specyficzną dla Azure.
+### requirements.txt
 
-- `implementation_full_euvic.py`: Pełna implementacja embeddings dla Euvic na Azure.
-- `output_test.json` i `test.json`: Pliki testowe i wyjściowe.
+Lists all Python packages required for the project, including:
+- Flask
+- gunicorn
+- python-dotenv
+- requests
+- pymongo
+- openai
+- tenacity
 
-### multi_parser/
-Folder zawierający różne parsery i skrypty do przetwarzania danych.
+## Environment Variables
 
-- `automated_parsed_typed.py`, `automated_parser.py`, `automated_parser_viz.py`: Różne wersje zautomatyzowanych parserów.
-- `parser_org.py`: Oryginalny parser.
-- `Euvic_test_prez.pdf` i `test1.pdf`: Pliki PDF do testowania parserów.
+Key environment variables include:
+- `COSMOSDB_CONNECTION_STRING`: MongoDB connection string
+- `DB_NAME`: Database name
+- `COSMOS_COLLECTION_NAME`: Collection name for storing data
+- `OPEN_AI_KEY`: OpenAI API key
+- `ACCESS_TOKEN`: WhatsApp API access token
+- `PHONE_NUMBER_ID`: WhatsApp phone number ID
+- `WEBHOOK_VERIFY_TOKEN`: Token for webhook verification
 
-### queries/
-Ten folder zawiera pliki związane z zapytaniami do bazy danych i wyszukiwaniem wektorowym.
+## RAG (Retrieval-Augmented Generation) Process
 
-- `semantic_vector_search.py`: Implementacja semantycznego wyszukiwania wektorowego.
-- `output_with_embeddings.json`: Plik wyjściowy z wynikami wyszukiwania.
+1. Incoming message is received via WhatsApp API
+2. Vector search is performed on the MongoDB database to find relevant context
+3. Retrieved context is combined with the user's query
+4. Combined input is sent to OpenAI's GPT model
+5. Generated response is sent back to the user via WhatsApp
 
-### rag-like-capabilities/
-Folder zawierający implementację funkcjonalności podobnych do RAG (Retrieval-Augmented Generation).
+## Error Handling and Logging
 
-- `templates/index.html`: Szablon HTML dla interfejsu użytkownika.
+The application includes comprehensive error handling and logging to facilitate debugging and monitoring. Key areas include:
+- MongoDB connection errors
+- WhatsApp API communication errors
+- OpenAI API errors
+- General request processing errors
 
-### Pliki w głównym katalogu
-- `fin_euvic.py`: Główny skrypt dla funkcjonalności Euvic.
-- `rag_like_corrected.py`, `rag_like_slow.py`, `rag_on_json_testing.py`: Różne implementacje i testy RAG.
-- `viz_test.py`: Skrypt do testowania wizualizacji.
-- `LICENSE`: Plik licencji projektu.
-- `README.md`: Główny plik README projektu (ten dokument).
+## Deployment
 
-## Instrukcje użytkowania
+This project is configured for deployment on Railway. The `railway.json` file specifies the build and deployment settings. To deploy:
 
-1. Sklonuj repozytorium na swój lokalny komputer.
-2. Zainstaluj wymagane zależności (lista zależności powinna być dodana do pliku `requirements.txt`).
-3. Skonfiguruj pliki `.env` w każdym folderze na podstawie odpowiednich plików `.env.example`.
-4. Uruchom skrypty w zależności od potrzeb:
-   - Użyj skryptów z folderu `connection-upload/` do testowania połączenia i wykonywania operacji CRUD.
-   - Generuj embeddings przy użyciu skryptów z folderów `json_embeddings/` lub `json_embeddings_azure/` -> uwaga tu narazie nie udało mi się zmusić Azure Open AI do współpracy.
-   - Przetwarzaj dane przy użyciu parserów z folderu `multi_parser/`.
-   - Wykonuj zapytania semantyczne przy użyciu skryptów z folderu `queries/`.
-   - Testuj funkcjonalności RAG przy użyciu skryptów z folderu `rag-like-capabilities/` i głównego katalogu.
+1. Set up a Railway account
+2. Connect your GitHub repository to Railway
+3. Configure environment variables in Railway dashboard
+4. Deploy the application
 
-5. W razie potrzeby, dostosuj skrypty do swoich specyficznych wymagań.
+## Security Considerations
 
-## Uwagi
+- Keep your `.env` file secure and never commit it to version control
+- Regularly rotate your API keys and access tokens
+- Ensure your MongoDB instance is properly secured
+- Use HTTPS for all API communications
 
-- Upewnij się, że masz odpowiednie uprawnienia i klucze dostępu do usług Azure, jeśli są wymagane.
-- Regularnie aktualizuj pliki `.env.example`, aby odzwierciedlały wszystkie wymagane zmienne środowiskowe.
-- Przed uruchomieniem skryptów na produkcji, przetestuj je dokładnie w środowisku deweloperskim.
+## Contributing
 
-## Kontakt
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-W przypadku pytań lub problemów, proszę o kontakt z administratorem projektu.
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+
+## Support
+
+If you encounter any problems or have any questions, please open an issue in the GitHub repository.
