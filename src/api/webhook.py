@@ -1,8 +1,9 @@
-from flask import Blueprint, request, jsonify
-import logging
+from flask import Blueprint, request
 from src.config import WEBHOOK_VERIFY_TOKEN
 from src.ai.rag_engine import RAGEngine
 from src.whatsapp.whatsapp_client import WhatsAppClient
+from src.database.mysql_queries import insert_data_mysql
+from src.logger import main_logger as logger
 
 webhook_bp = Blueprint('webhook', __name__)
 rag_engine = RAGEngine()
@@ -17,16 +18,19 @@ def webhook():
 
         if incoming_message['type'] == 'text':
             user_query = incoming_message['text']['body']
-            logging.info(f'Received message: {user_query}')
+            logger.info(f'Received message: {user_query}')
 
             ai_answer = rag_engine.process_query(user_query)
             WhatsAppClient.send_message(ai_answer, sender_phone_number)
+
+            # Insert the query-answer pair into MySQL
+            insert_data_mysql(sender_phone_number, user_query, ai_answer)
         else:
-            logging.info(f'Received a non-text message of type: {incoming_message["type"]}.')
+            logger.info(f'Received a non-text message of type: {incoming_message["type"]}.')
 
         return '✅ POST request processed successfully.', 200
     except Exception as e:
-        logging.error(f'❌ An error occurred during processing the request: {e}')
+        logger.error(f'❌ An error occurred during processing the request: {e}')
         return '❌ An error occurred during processing the request.', 400
 
 
@@ -37,11 +41,11 @@ def verify_webhook():
         verify_token = request.args.get('hub.verify_token')
         challenge = request.args.get('hub.challenge')
         if mode == 'subscribe' and verify_token == WEBHOOK_VERIFY_TOKEN:
-            logging.info('✅ Webhook verified successfully!')
+            logger.info('✅ Webhook verified successfully!')
             return challenge, 200
         else:
-            logging.warning('❌ Webhook verification failed. Tokens do not match.')
+            logger.warning('❌ Webhook verification failed. Tokens do not match.')
             return 'Webhook verification tokens do not match.', 400
     except Exception as e:
-        logging.error(f'❌ Error processing the verification request: {e}')
+        logger.error(f'❌ Error processing the verification request: {e}')
         return 'Error processing the verification request', 400
