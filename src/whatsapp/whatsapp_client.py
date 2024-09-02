@@ -1,6 +1,6 @@
 import requests
 import logging
-from config import META_ENDPOINT, PHONE_NUMBER_ID, ACCESS_TOKEN
+from src.config import META_ENDPOINT, PHONE_NUMBER_ID, ACCESS_TOKEN
 
 
 class WhatsAppClient:

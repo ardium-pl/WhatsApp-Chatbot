@@ -1,7 +1,7 @@
 from pymongo import MongoClient
 from pymongo.errors import ConnectionFailure
 import logging
-from config import COSMOSDB_CONNECTION_STRING, DB_NAME, COSMOS_COLLECTION_NAME
+from src.config import COSMOSDB_CONNECTION_STRING, DB_NAME, COSMOS_COLLECTION_NAME
 
 
 class MongoDBClient:

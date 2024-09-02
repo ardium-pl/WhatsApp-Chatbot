@@ -1,8 +1,8 @@
 from flask import Blueprint, request, jsonify
 import logging
-from config import WEBHOOK_VERIFY_TOKEN
-from ai.rag_engine import RAGEngine
-from whatsapp.whatsapp_client import WhatsAppClient
+from src.config import WEBHOOK_VERIFY_TOKEN
+from src.ai.rag_engine import RAGEngine
+from src.whatsapp.whatsapp_client import WhatsAppClient
 
 webhook_bp = Blueprint('webhook', __name__)
 rag_engine = RAGEngine()

@@ -1,7 +1,7 @@
 from openai import OpenAI
 from tenacity import retry, wait_random_exponential, stop_after_attempt
 import logging
-from config import OPENAI_API_KEY
+from src.config import OPENAI_API_KEY
 
 class OpenAIClient:
     def __init__(self):

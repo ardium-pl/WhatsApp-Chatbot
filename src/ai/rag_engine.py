@@ -1,5 +1,5 @@
-from database.mongodb_client import MongoDBClient
-from ai.openai_client import OpenAIClient
+from src.database.mongodb_client import MongoDBClient
+from src.ai.openai_client import OpenAIClient
 from datetime import datetime
 
 
