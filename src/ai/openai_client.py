@@ -3,7 +3,6 @@ from tenacity import retry, wait_random_exponential, stop_after_attempt
 import logging
 from config import OPENAI_API_KEY
 
-
 class OpenAIClient:
     def __init__(self):
         self.client = OpenAI(api_key=OPENAI_API_KEY)
