@@ -1,165 +1,120 @@
 # WhatsApp Chatbot with RAG
 
-This project implements a WhatsApp chatbot using Flask, integrated with OpenAI's GPT model and MongoDB for Retrieval-Augmented Generation (RAG). The bot can answer questions based on information stored in a MongoDB database.
-
-## Features
-
-- WhatsApp message handling
-- Integration with OpenAI's GPT model for natural language processing
-- MongoDB integration for storing and retrieving context
-- Vector search for relevant information retrieval
-- Webhook verification for WhatsApp API
-- Retrieval-Augmented Generation (RAG) for context-aware responses
-- Error handling and logging
-
-## Prerequisites
-
-- Python 3.7+
-- Flask
-- PyMongo
-- OpenAI Python Client
-- Requests
-- python-dotenv
-- A WhatsApp Business Account
-- An OpenAI API key
-- A MongoDB database (Azure Cosmos DB with MongoDB API)
-
-## Installation
-
-1. Clone the repository:
-   ```
-   git clone https://github.com/your-username/whatsapp-chatbot.git
-   cd whatsapp-chatbot
-   ```
-
-2. Install the required packages:
-   ```
-   pip install -r requirements.txt
-   ```
-
-3. Set up your environment variables (see Environment Variables section below).
-
-## Configuration
-
-Create a `.env` file in the root directory and add the following environment variables:
-
-```
-# See .env.example for a complete list of required variables
-```
-
-## Usage
-
-1. Start the Flask server:
-   ```
-   python demo.py
-   ```
-
-2. Set up your WhatsApp Business API to forward messages to your webhook URL.
-
-3. The bot will now respond to incoming WhatsApp messages using the RAG system.
+This project implements a WhatsApp chatbot that uses Retrieval-Augmented Generation (RAG) to provide intelligent responses based on a knowledge base stored in a MongoDB database.
 
 ## Project Structure
 
 ```
-whatsapp-chatbot/
+WhatsApp-Chatbot/
 │
-├── whatsapp/
+├── .env
+├── .gitignore
+├── README.md
+├── requirements.txt
+├── railway.json
+│
+├── src/
 │   ├── __init__.py
-│   ├── demo.py              # Main application file
-│   ├── .env                 # Environment variables (not in version control)
-│   ├── .env.example         # Example environment variables
-│   └── railway.json         # Railway deployment configuration
+│   ├── main.py
+│   ├── config.py
+│   ├── database/
+│   │   ├── __init__.py
+│   │   └── mongodb_client.py
+│   ├── ai/
+│   │   ├── __init__.py
+│   │   ├── openai_client.py
+│   │   └── rag_engine.py
+│   ├── whatsapp/
+│   │   ├── __init__.py
+│   │   └── whatsapp_client.py
+│   └── api/
+│       ├── __init__.py
+│       └── webhook.py
 │
-├── .gitignore               # Git ignore file
-├── README.md                # Project documentation
-├── requirements.txt         # Python dependencies
-└── railway.json             # Railway deployment configuration
+└── tests/
+    ├── __init__.py
+    ├── test_mongodb_client.py
+    ├── test_openai_client.py
+    ├── test_rag_engine.py
+    └── test_whatsapp_client.py
 ```
 
-## Detailed Component Descriptions
+## Features
 
-### demo.py
+- WhatsApp integration for receiving and sending messages
+- MongoDB (Cosmos DB) integration for storing and retrieving knowledge base
+- OpenAI GPT-4 integration for generating responses
+- Retrieval-Augmented Generation (RAG) for context-aware responses
+- Webhook for handling incoming WhatsApp messages
+- Containerized deployment using Railway
 
-This is the main application file containing:
-- Flask application setup
-- MongoDB connection and operations
-- OpenAI API integration
-- WhatsApp message handling logic
-- RAG implementation
-- Webhook routes for incoming messages and verification
+## Prerequisites
 
-### railway.json
+- Python 3.8+
+- MongoDB account (or Cosmos DB with MongoDB API)
+- OpenAI API key
+- WhatsApp Business API access
 
-Configuration file for deployment on Railway platform, specifying:
-- Build settings
-- Start command
-- Restart policy
+## Setup
 
-### requirements.txt
+1. Clone the repository:
+   ```
+   git clone https://github.com/yourusername/WhatsApp-Chatbot.git
+   cd WhatsApp-Chatbot
+   ```
 
-Lists all Python packages required for the project, including:
-- Flask
-- gunicorn
-- python-dotenv
-- requests
-- pymongo
-- openai
-- tenacity
+2. Create a virtual environment and activate it:
+   ```
+   python -m venv venv
+   source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
+   ```
 
-## Environment Variables
+3. Install the required packages:
+   ```
+   pip install -r requirements.txt
+   ```
 
-Key environment variables include:
-- `COSMOSDB_CONNECTION_STRING`: MongoDB connection string
-- `DB_NAME`: Database name
-- `COSMOS_COLLECTION_NAME`: Collection name for storing data
-- `OPEN_AI_KEY`: OpenAI API key
-- `ACCESS_TOKEN`: WhatsApp API access token
-- `PHONE_NUMBER_ID`: WhatsApp phone number ID
-- `WEBHOOK_VERIFY_TOKEN`: Token for webhook verification
+4. Copy the `.env.example` file to `.env` and fill in your configuration details:
+   ```
+   cp .env.example .env
+   ```
 
-## RAG (Retrieval-Augmented Generation) Process
+5. Edit the `.env` file with your specific configuration details:
+   - MongoDB/Cosmos DB connection string
+   - OpenAI API key
+   - WhatsApp API credentials
+   - Other configuration parameters
 
-1. Incoming message is received via WhatsApp API
-2. Vector search is performed on the MongoDB database to find relevant context
-3. Retrieved context is combined with the user's query
-4. Combined input is sent to OpenAI's GPT model
-5. Generated response is sent back to the user via WhatsApp
+## Running the Application
 
-## Error Handling and Logging
+To run the application locally:
 
-The application includes comprehensive error handling and logging to facilitate debugging and monitoring. Key areas include:
-- MongoDB connection errors
-- WhatsApp API communication errors
-- OpenAI API errors
-- General request processing errors
+```
+python src/main.py
+```
+
+The application will start and listen on the port specified in your `.env` file (default is 8080).
 
 ## Deployment
 
-This project is configured for deployment on Railway. The `railway.json` file specifies the build and deployment settings. To deploy:
+This project is configured for deployment on Railway. To deploy:
 
-1. Set up a Railway account
-2. Connect your GitHub repository to Railway
-3. Configure environment variables in Railway dashboard
-4. Deploy the application
+1. Push your code to a GitHub repository.
+2. Connect your Railway account to your GitHub repository.
+3. Railway will automatically deploy your application using the configuration in `railway.json`.
 
-## Security Considerations
+## Testing
 
-- Keep your `.env` file secure and never commit it to version control
-- Regularly rotate your API keys and access tokens
-- Ensure your MongoDB instance is properly secured
-- Use HTTPS for all API communications
+To run the tests:
+
+```
+python -m pytest tests/
+```
 
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+## License
 
-
-## Support
-
-If you encounter any problems or have any questions, please open an issue in the GitHub repository.
+This project is licensed under the MIT License - see the LICENSE file for details.
