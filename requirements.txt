@@ -9,3 +9,4 @@ flask
 logging
 datetime
 requests
+mysql-connector-python
