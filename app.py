@@ -1,6 +1,7 @@
 from flask import Flask, request
 import requests
 import os
+from pprint import pprint
 
 # Load environment variables
 WEBHOOK_VERIFY_TOKEN = os.environ.get('WEBHOOK_VERIFY_TOKEN')
@@ -45,35 +46,50 @@ def get_ai_response():
     try:
         data = request.get_json()
 
+        print("REQUEST BODY:")
+        pprint(data)
+        print("/n")
+
         try:
             incoming_message = data['entry'][0]['changes'][0]['value']['messages'][0]
+            sender_phone_number = incoming_message['from']
         except Exception as e:
-            print(f'❌ Error accessing user message: {e} ❌')
-            return '❌ Error accessing user message.', 400
+            print(f"❌ Error accessing a user message. 'Messages' field probably doesn't exist on the incoming json body.\n"
+                  f"Error message: {e}")
+            return '❌', 400
 
-        sender_phone_number = incoming_message['from']
+
+        try:
+            user_whatsapp_id = data['entry'][0]['changes'][0]['value']['contacts'][0]["wa_id"]
+        except Exception as e:
+            print(f"❌ Error accessing a user Whatsapp ID.\n"
+                  f"Error message: {e}")
+            user_whatsapp_id = None
+
 
         # Check if the incoming message contains text
         if incoming_message['type'] == 'text':
             user_query = incoming_message['text']['body']
 
-            print('Received a POST request containing a text message.')
-            print(f'Message text: {user_query}')
+            print(f'✅ Received a POST request containing a text message:\n'
+                  f'\t📩 Message text: {user_query}\n'
+                  f'\t📞 Sender Whatsapp ID: {user_whatsapp_id}')
 
             # Get AI answer
             ai_answer = 'tbc'
 
             # Send POST request with AI answer
             send_ai_response(ai_answer, sender_phone_number)
-
         else:
-            print(f'Received a POST request containing different message type: {incoming_message["type"]}.')
+            print(f'✅ Received a POST request containing different message type:\n'
+                  f'\t📩 Message type: {incoming_message["type"]}.')
 
-        return '✅ POST request received successfully.', 200
+        return '✅', 200
 
     except Exception as e:
-        print(f'❌ An error occurred during processing the request: {e} ❌')
-        return '❌ An error occurred during processing the request.', 400
+        print(f'❌ An error occurred during processing the request.\n'
+              f'Error messages {e}.')
+        return '❌', 400
 
 
 @app.get('/webhook')
