@@ -1,7 +1,7 @@
 from src.database.mongodb_client import MongoDBClient
 from src.ai.openai_client import OpenAIClient
 from datetime import datetime
-
+from src.logger import main_logger, cosmosdb_logger, openai_logger
 
 def prepare_context(results):
     context = ""
@@ -19,6 +19,7 @@ def prepare_context(results):
             created_at_str = 'N/A'
         context += f"Created At: {created_at_str}\n"
         context += f"Word Count: {result.get('wordCount', 'N/A')}\n\n"
+    main_logger.debug(f"Context prepared with {len(results)} results")
     return context
 
 
@@ -30,6 +31,7 @@ def prepare_messages(context, question):
 
     Presentation content:
     """
+    main_logger.debug("Messages prepared for chat completion")
     return [
         {"role": "system", "content": system_prompt + context},
         {"role": "user", "content": question}
@@ -40,15 +42,24 @@ class RAGEngine:
     def __init__(self):
         self.mongodb_client = MongoDBClient()
         self.openai_client = OpenAIClient()
+        main_logger.info("RAGEngine initialized")
 
     def process_query(self, question, num_results=10):
+        main_logger.info(f"Processing query: {question}")
         self.mongodb_client.connect()
         try:
             self.mongodb_client.ensure_vector_search_index()
             query_embedding = self.openai_client.generate_embeddings(question)
             results = self.mongodb_client.vector_search(query_embedding, num_results)
+            cosmosdb_logger.info(f"Vector search completed with {len(results)} results")
             context = prepare_context(results)
             messages = prepare_messages(context, question)
-            return self.openai_client.generate_chat_completion(messages)
+            response = self.openai_client.generate_chat_completion(messages)
+            openai_logger.info("Chat completion generated")
+            main_logger.info("Query processed successfully")
+            return response
+        except Exception as e:
+            main_logger.error(f"Error processing query: {e}")
+            raise
         finally:
             self.mongodb_client.close()
