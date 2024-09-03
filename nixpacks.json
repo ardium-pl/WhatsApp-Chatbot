@@ -1,0 +1,9 @@
+{
+  "phases": {
+    "install": {
+      "nixpkgs": [
+        "mysql"
+      ]
+    }
+  }
+}
