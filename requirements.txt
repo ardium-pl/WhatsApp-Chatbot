@@ -5,10 +5,10 @@ requests~=2.32.3
 pymongo~=4.8.0
 openai~=1.40.0
 tenacity~=9.0.0
-flask
 logging~=0.4.9.6
 datetime~=5.5
-requests
+requests~=2.32.3
 config~=0.5.1
 mysql~=0.0.3
 mysql-connector-python~=9.0.0
+mysqlclient~=2.1.0
