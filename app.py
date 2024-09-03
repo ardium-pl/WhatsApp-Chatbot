@@ -46,49 +46,48 @@ def get_ai_response():
     try:
         data = request.get_json()
 
-        print("REQUEST BODY:")
-        pprint(data)
-        print("/n")
-
         try:
-            incoming_message = data['entry'][0]['changes'][0]['value']['messages'][0]
-            sender_phone_number = incoming_message['from']
+            main_request_body = data['entry'][0]['changes'][0]['value']
+
+            errors = main_request_body.get('errors')
+            statuses = main_request_body.get('statuses')
+            messages = main_request_body.get('messages')
+
+            if errors:
+                print(f"⚙️ Request contained an errors field:"
+                      f"\tErrors: {errors}")
+            if statuses:
+                print(f'⚙️ Message status: {statuses[0].get("status")}')
+            if messages:
+                incoming_message = messages[0]
+                sender_phone_number = incoming_message.get("from")
+
+                # Check if the incoming message contains text
+                if incoming_message.get('type') == 'text':
+                    user_query = incoming_message['text'].get('body')
+
+                    print(f'✅ Received a POST request containing a text message:\n'
+                          f'\t📩 Message text: {user_query}\n'
+                          f'\t📞 Sender phone number: {sender_phone_number}')
+
+                    # Get AI answer
+                    ai_answer = 'tbc'
+
+                    # Send POST request with AI answer
+                    send_ai_response(ai_answer, sender_phone_number)
+                else:
+                    print(f"⚙️ Received POST request doesn't contain text.\n"
+                          f'\t📩 Message type: {incoming_message.get("type")}.')
+
         except Exception as e:
-            print(f"❌ Error accessing a user message. 'Messages' field probably doesn't exist on the incoming json body.\n"
-                  f"Error message: {e}")
-            return '❌', 400
-
-
-        try:
-            user_whatsapp_id = data['entry'][0]['changes'][0]['value']['contacts'][0]["wa_id"]
-        except Exception as e:
-            print(f"❌ Error accessing a user Whatsapp ID.\n"
-                  f"Error message: {e}")
-            user_whatsapp_id = None
-
-
-        # Check if the incoming message contains text
-        if incoming_message['type'] == 'text':
-            user_query = incoming_message['text']['body']
-
-            print(f'✅ Received a POST request containing a text message:\n'
-                  f'\t📩 Message text: {user_query}\n'
-                  f'\t📞 Sender Whatsapp ID: {user_whatsapp_id}')
-
-            # Get AI answer
-            ai_answer = 'tbc'
-
-            # Send POST request with AI answer
-            send_ai_response(ai_answer, sender_phone_number)
-        else:
-            print(f'✅ Received a POST request containing different message type:\n'
-                  f'\t📩 Message type: {incoming_message["type"]}.')
-
-        return '✅', 200
+            print(f"❌ Error accessing a main request body.\n"
+                  f"\tError message: {e}")
+        finally:
+            return '✅', 200
 
     except Exception as e:
         print(f'❌ An error occurred during processing the request.\n'
-              f'Error messages {e}.')
+              f'\tError messages {e}.')
         return '❌', 400
 
 
