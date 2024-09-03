@@ -1,5 +1,5 @@
 from flask import Flask
-from api.webhook import webhook_bp
+from src.api.webhook import webhook_bp
 from src.config import PORT
 
 app = Flask(__name__)
