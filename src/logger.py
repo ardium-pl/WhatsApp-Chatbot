@@ -6,16 +6,19 @@ from logging.handlers import RotatingFileHandler
 def setup_logger(name, log_file, level=logging.INFO):
     formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
 
-    handler = RotatingFileHandler(log_file, maxBytes=10 * 1024 * 1024, backupCount=5)
+    # Set up file handler with UTF-8 encoding
+    handler = RotatingFileHandler(log_file, maxBytes=10 * 1024 * 1024, backupCount=5, encoding='utf-8')
     handler.setFormatter(formatter)
 
     logger = logging.getLogger(name)
     logger.setLevel(level)
     logger.addHandler(handler)
 
-    # Add console handler
+    # Set up console handler with UTF-8 encoding
     console_handler = logging.StreamHandler()
     console_handler.setFormatter(formatter)
+    # console_handler.setStream(os.sys.stdout)  # Ensure standard output is used
+    console_handler.encoding = 'utf-8'
     logger.addHandler(console_handler)
 
     return logger

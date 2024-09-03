@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Query Testing</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 h-screen">
+<div class="container mx-auto p-4">
+    <h1 class="text-2xl font-bold mb-4">Multi-Query Testing</h1>
+    <div class="grid grid-cols-2 gap-4 mb-4">
+        {% for i in range(4) %}
+        <div class="bg-white rounded-lg shadow p-4">
+            <textarea id="query{{ i }}" class="w-full h-32 p-2 mb-2 border rounded"
+                      placeholder="Enter query {{ i + 1 }}"></textarea>
+            <div id="response{{ i }}" class="w-full h-32 p-2 bg-gray-100 rounded overflow-auto">Response will appear
+                here
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    <button id="sendAll" class="w-full py-2 bg-blue-500 text-white rounded-lg">Send All Queries</button>
+</div>
+
+<script>
+    document.getElementById('sendAll').addEventListener('click', async () => {
+        const button = document.getElementById('sendAll');
+        button.disabled = true;
+        button.textContent = 'Processing...';
+
+        const queries = Array.from({length: 4}, (_, i) => document.getElementById(`query${i}`).value);
+
+        try {
+            const responses = await Promise.all(queries.map(query =>
+                fetch('/api/query', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({query})
+                }).then(res => res.json())
+            ));
+
+            responses.forEach((res, i) => {
+                document.getElementById(`response${i}`).textContent = res.response;
+            });
+        } catch (error) {
+            console.error('Error sending queries:', error);
+            alert('An error occurred while processing queries.');
+        } finally {
+            button.disabled = false;
+            button.textContent = 'Send All Queries';
+        }
+    });
+</script>
+</body>
+</html>
