@@ -81,4 +81,4 @@ def verify_webhook():
 # Start the worker
 from threading import Thread
 
-Thread(target=worker.run_worker).start()
+Thread(target=worker.run).start()
