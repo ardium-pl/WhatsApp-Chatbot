@@ -16,6 +16,7 @@ def setup_logger(name, log_file, level=logging.INFO):
     # Add console handler
     console_handler = logging.StreamHandler()
     console_handler.setFormatter(formatter)
+    console_handler.encoding = 'utf-8'
     logger.addHandler(console_handler)
 
     return logger

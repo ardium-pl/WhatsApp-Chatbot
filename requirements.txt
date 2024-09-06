@@ -13,3 +13,6 @@ requests~=2.32.3
 psutil
 Thread
 hypercorn
+Flask[async]
+aiomysql
+aiohttp
