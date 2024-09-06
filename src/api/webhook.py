@@ -13,7 +13,7 @@ rag_engine = RAGEngine()
 @webhook_bp.route('/webhook', methods=['POST'])
 async def webhook():
     try:
-        data = await request.get_json()
+        data = request.get_json()
 
         try:
             main_request_body = data['entry'][0]['changes'][0]['value']
