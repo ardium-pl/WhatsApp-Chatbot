@@ -7,7 +7,7 @@ from src.logger import mysql_logger
 
 async def insert_data_mysql(sender_phone_number, user_query, ai_answer):
     try:
-        async with aiomysql.create_pool(host='your_host', port=3306,
+        async with aiomysql.create_pool(host='your_host', port=49220,
                                         user='your_user', password='your_password',
                                         db='your_database') as pool:
             async with pool.acquire() as conn:
