@@ -61,6 +61,6 @@ class RAGEngine:
             return response
         except Exception as e:
             main_logger.error(f"Error processing query: {e}")
-            raise
+            return "Kurza twarz! Wystąpił niezidentyfikowany błąd. 🐞"
         finally:
             self.mongodb_client.close()

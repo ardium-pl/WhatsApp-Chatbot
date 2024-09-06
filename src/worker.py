@@ -5,22 +5,8 @@ from src.queue.inmem_queue import InMemoryQueue
 from src.ai.rag_engine import RAGEngine
 from src.whatsapp.whatsapp_client import WhatsAppClient
 from src.database.mysql_queries import insert_data_mysql
-from src.logger import main_logger, whatsapp_logger, mysql_logger
+from src.logger import main_logger, whatsapp_logger
 from src.utils.resource_monitor import ResourceMonitor
-
-
-async def insert_to_database(phone_number, query, answer):
-    try:
-        await insert_data_mysql(phone_number, query, answer)
-    except Exception as e:
-        mysql_logger.error(f"Failed to insert data to MySQL: {e}")
-
-
-async def send_whatsapp_message(message, phone_number):
-    try:
-        await WhatsAppClient.send_message(message, phone_number)
-    except Exception as e:
-        whatsapp_logger.error(f"Failed to send WhatsApp message: {e}")
 
 
 class Worker:
@@ -45,8 +31,8 @@ class Worker:
 
             # These operations should be asynchronous
             await asyncio.gather(
-                send_whatsapp_message(ai_answer, sender_phone_number),
-                insert_to_database(sender_phone_number, user_query, ai_answer)
+                WhatsAppClient.send_message(ai_answer, sender_phone_number),
+                insert_data_mysql(sender_phone_number, user_query, ai_answer)
             )
 
             whatsapp_logger.info('AI answer sent and data inserted into MySQL')
@@ -90,4 +76,5 @@ def run_worker():
 
 
 if __name__ == "__main__":
+    print('__name__ == "__main__" works in worker.py')
     run_worker()

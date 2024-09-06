@@ -1,24 +1,8 @@
 import aiomysql
 from src.logger import mysql_logger
-from .mysql_config import connection, cursor
 
 # To be updated
-def get_user_id(sender_phone_number):
-    try:
-        query = "SELECT id FROM users WHERE sender_phone_number = %s"
-        data = (sender_phone_number,)
-
-        cursor.execute(query, data)
-        result = cursor.fetchone()
-
-        if result:
-            return result[0]
-        else:
-            raise RuntimeError("No matching ids found.")
-
-    except Exception as e:
-        mysql_logger.warning(f"❌ An error occurred during fetching a user id: {e}")
-        raise RuntimeError("Cannot perform further queries without user_id")
+# def get_user_id(sender_phone_number):
 
 
 async def insert_data_mysql(sender_phone_number, user_query, ai_answer):
