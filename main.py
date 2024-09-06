@@ -12,7 +12,8 @@ app.register_blueprint(webhook_bp)
 
 # Initialize Worker
 worker = Worker()
-app.worker = worker  # Attach worker to app context
+app.worker = worker
+main_logger.info("Worker initialized and attached to app context")
 
 
 async def run_flask():

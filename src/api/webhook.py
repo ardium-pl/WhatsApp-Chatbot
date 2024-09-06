@@ -2,7 +2,8 @@ from flask import Blueprint, request, current_app
 from src.config import WEBHOOK_VERIFY_TOKEN
 from src.logger import main_logger
 import traceback
-
+from flask import current_app
+from main import worker
 webhook_bp = Blueprint('webhook', __name__)
 
 
@@ -33,10 +34,11 @@ def webhook():
                                  f'Sender phone number: {sender_phone_number}')
 
                 # Enqueue the task for processing by the Worker
-                current_app.worker.request_queue.enqueue({
+                worker.request_queue.enqueue({
                     'sender_phone_number': sender_phone_number,
                     'query': user_query
                 })
+                main_logger.info(f"Task enqueued for processing: {user_query}")
 
             else:
                 main_logger.info(f"Received POST request doesn't contain text.\n"
