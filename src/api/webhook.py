@@ -1,14 +1,11 @@
 from flask import Blueprint, request, current_app
 from src.logger import whatsapp_logger, main_logger
-from src.ai import RAGEngine
 from src.config import WEBHOOK_VERIFY_TOKEN
-from src.database.mysql_queries import insert_data_mysql
 import traceback
-from src.whatsapp.whatsapp_client import WhatsAppClient
-import asyncio
+from src.worker import Worker
 
 webhook_bp = Blueprint('webhook', __name__)
-rag_engine = RAGEngine()
+worker = Worker()
 
 
 @webhook_bp.route('/webhook', methods=['POST'])
@@ -40,12 +37,11 @@ def webhook():
                                          f'\t📩 Message text: {user_query}\n'
                                          f'\t📞 Sender phone number: {sender_phone_number}')
 
-                    # Respond with AI answer
-                    ai_answer = rag_engine.process_query(user_query)
-
-                    # Run async functions in the background
-                    asyncio.create_task(WhatsAppClient.send_message(ai_answer, sender_phone_number))
-                    asyncio.create_task(insert_data_mysql(sender_phone_number, user_query, ai_answer))
+                    # Add the request to the worker's queue
+                    worker.request_queue.enqueue({
+                        'sender_phone_number': sender_phone_number,
+                        'query': user_query
+                    })
 
                 else:
                     whatsapp_logger.warn(f"⚙️ Received POST request doesn't contain text.\n"
@@ -80,3 +76,9 @@ def verify_webhook():
         error_msg += traceback.format_exc()
         main_logger.error(error_msg)
         return 'Error processing the verification request', 400
+
+
+# Start the worker
+from threading import Thread
+
+Thread(target=worker.run_worker).start()
