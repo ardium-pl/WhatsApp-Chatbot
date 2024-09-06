@@ -1,3 +1,3 @@
-from .inmem_queue import InMemoryQueue
+from .inmem_queue import AsyncInMemoryQueue
 
-__all__ = ['InMemoryQueue']
+__all__ = ['AsyncInMemoryQueue']
