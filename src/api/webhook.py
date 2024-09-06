@@ -1,9 +1,14 @@
-from flask import Blueprint, request, current_app, g
+from flask import Blueprint, request, g
 from src.logger import whatsapp_logger, main_logger
 from src.config import WEBHOOK_VERIFY_TOKEN
+from src.ai import RAGEngine
+from src.whatsapp.whatsapp_client import WhatsAppClient
+from src.database.mysql_queries import insert_data_mysql
 import traceback
+import asyncio
 
 webhook_bp = Blueprint('webhook', __name__)
+rag_engine = RAGEngine()
 
 
 @webhook_bp.route('/webhook', methods=['POST'])
@@ -35,10 +40,22 @@ async def webhook():
                                          f'\t📩 Message text: {user_query}\n'
                                          f'\t📞 Sender phone number: {sender_phone_number}')
 
-                    # Add the request to the worker's queue
+                    # Respond with AI answer
+                    ai_answer = rag_engine.process_query(user_query)
+
+                    # Use asyncio to run these potentially blocking operations concurrently
+                    await asyncio.gather(
+                        WhatsAppClient.send_message(ai_answer, sender_phone_number),
+                        insert_data_mysql(sender_phone_number, user_query, ai_answer)
+                    )
+
+                    whatsapp_logger.info('AI answer sent and data inserted into MySQL')
+
+                    # Add the processed request to the worker's queue for any additional background tasks
                     await g.worker.request_queue.enqueue({
                         'sender_phone_number': sender_phone_number,
-                        'query': user_query
+                        'query': user_query,
+                        'answer': ai_answer
                     })
 
                 else:
