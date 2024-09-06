@@ -41,11 +41,11 @@ def webhook():
 
                     # Respond with AI answer
                     ai_answer = rag_engine.process_query(user_query)
-                    send_whatsapp_message(sender_phone_number)
+                    send_whatsapp_message(ai_answer, sender_phone_number)
                     # whatsapp_logger.info('AI answer sent successfully')
 
                     # Insert the query-answer pair into MySQL database
-                    insert_to_database(user_query, ai_answer)
+                    insert_to_database(sender_phone_number, user_query, ai_answer)
                     # mysql_logger.info('Query-answer pair inserted into MySQL')
 
                 else:
