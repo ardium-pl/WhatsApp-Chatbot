@@ -36,7 +36,7 @@ async def webhook():
                                          f'\t📞 Sender phone number: {sender_phone_number}')
 
                     # Add the request to the worker's queue
-                    g.worker.request_queue.enqueue({
+                    await g.worker.request_queue.enqueue({
                         'sender_phone_number': sender_phone_number,
                         'query': user_query
                     })
