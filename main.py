@@ -10,8 +10,9 @@ from src.logger import main_logger
 app = Flask(__name__)
 app.register_blueprint(webhook_bp)
 
-# Inicjalizacja Worker'a
+# Initialize Worker
 worker = Worker()
+app.worker = worker  # Attach worker to app context
 
 
 async def run_flask():
@@ -23,7 +24,7 @@ async def run_flask():
 async def main():
     main_logger.info("Starting the application")
     flask_task = asyncio.create_task(run_flask())
-    worker_task = asyncio.create_task(asyncio.to_thread(run_worker))
+    worker_task = asyncio.create_task(worker.run())
     await asyncio.gather(flask_task, worker_task)
 
 
