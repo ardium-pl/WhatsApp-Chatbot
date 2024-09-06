@@ -63,7 +63,7 @@ async def insert_data_mysql(sender_phone_number, user_query, ai_answer):
                                           (user_id, user_query, ai_answer))
                         await conn.commit()
                         mysql_logger.info("✅ New record inserted successfully into MySQL.")
-                    else:
-                        mysql_logger.warning(f"❌ No matching user found for WhatsApp number ID: {whatsapp_number_id}")
+                    # else:
+                    #     mysql_logger.warning(f"❌ No matching user found for WhatsApp number ID: {whatsapp_number_id}")
     except Exception as e:
         mysql_logger.error(f"❌ An error occurred during MySQL operation: {e}")
