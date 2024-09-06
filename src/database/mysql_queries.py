@@ -1,5 +1,7 @@
 import aiomysql
 from src.logger import mysql_logger
+from src.config import MYSQL_HOST, MYSQL_PORT, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE
+
 
 # To be updated
 # def get_user_id(sender_phone_number):
@@ -7,9 +9,13 @@ from src.logger import mysql_logger
 
 async def insert_data_mysql(sender_phone_number, user_query, ai_answer):
     try:
-        async with aiomysql.create_pool(host='your_host', port=49220,
-                                        user='your_user', password='your_password',
-                                        db='your_database') as pool:
+        async with aiomysql.create_pool(
+                host=MYSQL_HOST,
+                port=MYSQL_PORT,
+                user=MYSQL_USER,
+                password=MYSQL_PASSWORD,
+                db=MYSQL_DATABASE
+        ) as pool:
             async with pool.acquire() as conn:
                 async with conn.cursor() as cur:
                     # Get user id based on the user phone number

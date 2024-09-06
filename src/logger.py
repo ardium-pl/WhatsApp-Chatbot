@@ -1,10 +1,29 @@
 import logging
 import os
 from logging.handlers import RotatingFileHandler
+from datetime import datetime
+import pytz
+
+# Define the timezone for Poland
+POLAND_TZ = pytz.timezone('Europe/Warsaw')
+
+
+class PolandFormatter(logging.Formatter):
+    def formatTime(self, record, datefmt=None):
+        # Convert the timestamp to the Poland timezone
+        dt = datetime.fromtimestamp(record.created, POLAND_TZ)
+        if datefmt:
+            s = dt.strftime(datefmt)
+        else:
+            try:
+                s = dt.isoformat(timespec='milliseconds')
+            except TypeError:
+                s = dt.isoformat()
+        return s
 
 
 def setup_logger(name, log_file, level=logging.INFO):
-    formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+    formatter = PolandFormatter('%(asctime)s %(levelname)s %(message)s')
 
     handler = RotatingFileHandler(log_file, maxBytes=10 * 1024 * 1024, backupCount=5)
     handler.setFormatter(formatter)

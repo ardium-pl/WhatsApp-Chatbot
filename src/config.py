@@ -20,5 +20,12 @@ WEBHOOK_VERIFY_TOKEN = os.getenv("WEBHOOK_VERIFY_TOKEN")
 # Flask Configuration
 SECRET_KEY = os.getenv("SECRET_KEY")
 
+# MySQL Configuration
+MYSQL_HOST = os.getenv("MYSQL_HOST")
+MYSQL_PORT = os.getenv("MYSQL_PORT")
+MYSQL_USER = os.getenv("MYSQL_USER")
+MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD")
+MYSQL_DATABASE = os.getenv("MYSQL_DATABASE")
+
 # Server Configuration
 PORT = int(os.getenv("PORT", 8080))
