@@ -1,5 +1,5 @@
 import asyncio
-from flask import Flask
+from flask import Flask, g
 from hypercorn.config import Config
 from hypercorn.asyncio import serve
 from src.api.webhook import webhook_bp
@@ -12,7 +12,11 @@ app.register_blueprint(webhook_bp)
 
 # Initialize Worker
 worker = Worker()
-app.worker = worker  # Attach worker to app context
+
+
+@app.before_request
+def before_request():
+    g.worker = worker
 
 
 async def run_flask():

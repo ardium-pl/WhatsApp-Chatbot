@@ -1,7 +1,7 @@
 import asyncio
 import psutil
 from concurrent.futures import ThreadPoolExecutor
-from src.queue.inmem_queue import InMemoryQueue
+from src.queue.inmem_queue import AsyncInMemoryQueue
 from src.ai.rag_engine import RAGEngine
 from src.whatsapp.whatsapp_client import WhatsAppClient
 from src.database.mysql_queries import insert_data_mysql
@@ -11,7 +11,7 @@ from src.utils.resource_monitor import ResourceMonitor
 
 class Worker:
     def __init__(self):
-        self.request_queue = InMemoryQueue()
+        self.request_queue = AsyncInMemoryQueue()
         self.rag_engine = RAGEngine()
         self.cpu_bound_executor = ThreadPoolExecutor(max_workers=9)  # 8 vCPU + 1
         self.io_bound_executor = ThreadPoolExecutor(max_workers=16)  # 2 * 8 vCPU
@@ -63,7 +63,12 @@ class Worker:
     async def run(self):
         main_logger.info("Starting optimized queue worker")
         self.resource_monitor.start()
-        await self.process_queue()
+        while True:
+            item = await self.request_queue.dequeue()
+            if item:
+                await self.process_single_request(item)
+            else:
+                await asyncio.sleep(0.1)  # Short sleep if queue is empty
 
 
 async def main():

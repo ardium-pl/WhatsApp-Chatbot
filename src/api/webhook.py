@@ -1,15 +1,13 @@
-from flask import Blueprint, request, current_app
+from flask import Blueprint, request, current_app, g
 from src.logger import whatsapp_logger, main_logger
 from src.config import WEBHOOK_VERIFY_TOKEN
 import traceback
-from src.worker import Worker
 
 webhook_bp = Blueprint('webhook', __name__)
-worker = Worker()
 
 
 @webhook_bp.route('/webhook', methods=['POST'])
-def webhook():
+async def webhook():
     try:
         data = request.get_json()
 
@@ -38,7 +36,7 @@ def webhook():
                                          f'\t📞 Sender phone number: {sender_phone_number}')
 
                     # Add the request to the worker's queue
-                    worker.request_queue.enqueue({
+                    g.worker.request_queue.enqueue({
                         'sender_phone_number': sender_phone_number,
                         'query': user_query
                     })
@@ -60,7 +58,7 @@ def webhook():
 
 
 @webhook_bp.route('/webhook', methods=['GET'])
-def verify_webhook():
+async def verify_webhook():
     try:
         mode = request.args.get('hub.mode')
         verify_token = request.args.get('hub.verify_token')
@@ -76,9 +74,3 @@ def verify_webhook():
         error_msg += traceback.format_exc()
         main_logger.error(error_msg)
         return 'Error processing the verification request', 400
-
-
-# Start the worker
-from threading import Thread
-
-Thread(target=worker.run).start()
