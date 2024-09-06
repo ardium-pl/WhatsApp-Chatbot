@@ -27,8 +27,8 @@ log_dir = "logs"
 os.makedirs(log_dir, exist_ok=True)
 
 # Create loggers
-main_logger = setup_logger('main', os.path.join(log_dir, 'main.log'))
-mysql_logger = setup_logger('mysql', os.path.join(log_dir, 'mysql.log'))
-cosmosdb_logger = setup_logger('cosmosdb', os.path.join(log_dir, 'cosmosdb.log'))
-openai_logger = setup_logger('openai', os.path.join(log_dir, 'openai.log'))
-whatsapp_logger = setup_logger('whatsapp', os.path.join(log_dir, 'whatsapp.log'))
+main_logger = setup_logger('[Main]', os.path.join(log_dir, 'main.log'))
+mysql_logger = setup_logger('[Mysql]', os.path.join(log_dir, 'mysql.log'))
+cosmosdb_logger = setup_logger('[Cosmosdb]', os.path.join(log_dir, 'cosmosdb.log'))
+openai_logger = setup_logger('[Openai]', os.path.join(log_dir, 'openai.log'))
+whatsapp_logger = setup_logger('[Whatsapp]', os.path.join(log_dir, 'whatsapp.log'))

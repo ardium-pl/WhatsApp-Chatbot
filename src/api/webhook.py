@@ -1,8 +1,7 @@
 from flask import Blueprint, request, current_app
-from src.logger import whatsapp_logger
+from src.logger import whatsapp_logger, main_logger
 from src.ai import RAGEngine
 from src.config import WEBHOOK_VERIFY_TOKEN
-from src.logger import main_logger
 from src.database.mysql_queries import insert_data_mysql
 import traceback
 from src.whatsapp.whatsapp_client import WhatsAppClient
@@ -10,8 +9,9 @@ from src.whatsapp.whatsapp_client import WhatsAppClient
 webhook_bp = Blueprint('webhook', __name__)
 rag_engine = RAGEngine()
 
+
 @webhook_bp.route('/webhook', methods=['POST'])
-async def webhook():
+def webhook():
     try:
         data = request.get_json()
 
@@ -36,13 +36,13 @@ async def webhook():
                     user_query = incoming_message['text'].get('body')
 
                     whatsapp_logger.info(f'✅ Received a POST request containing a text message:\n'
-                          f'\t📩 Message text: {user_query}\n'
-                          f'\t📞 Sender phone number: {sender_phone_number}')
+                                         f'\t📩 Message text: {user_query}\n'
+                                         f'\t📞 Sender phone number: {sender_phone_number}')
 
                     # Respond with AI answer
-                    ai_answer = await rag_engine.process_query(user_query)
-                    await WhatsAppClient.send_message(ai_answer, sender_phone_number)
-                    await insert_data_mysql(sender_phone_number, user_query, ai_answer)
+                    ai_answer = rag_engine.process_query(user_query)
+                    WhatsAppClient.send_message(ai_answer, sender_phone_number)
+                    insert_data_mysql(sender_phone_number, user_query, ai_answer)
 
                 else:
                     whatsapp_logger.warn(f"⚙️ Received POST request doesn't contain text.\n"
