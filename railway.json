@@ -4,7 +4,7 @@
     "builder": "NIXPACKS"
   },
   "deploy": {
-    "startCommand": "PYTHONPATH=$PYTHONPATH:/app gunicorn main:app",
+    "startCommand": "PYTHONPATH=$PYTHONPATH:/app hypercorn main:app",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
   }
