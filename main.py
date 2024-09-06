@@ -4,11 +4,14 @@ from hypercorn.config import Config
 from hypercorn.asyncio import serve
 from src.api.webhook import webhook_bp
 from src.config import PORT
-from src.worker import run_worker
+from src.worker import Worker, run_worker
 from src.logger import main_logger
 
 app = Flask(__name__)
 app.register_blueprint(webhook_bp)
+
+# Inicjalizacja Worker'a
+worker = Worker()
 
 
 async def run_flask():

@@ -3,6 +3,7 @@ from src.ai.openai_client import OpenAIClient
 from datetime import datetime
 from src.logger import main_logger, cosmosdb_logger, openai_logger
 
+
 def prepare_context(results):
     context = ""
     for result in results:
