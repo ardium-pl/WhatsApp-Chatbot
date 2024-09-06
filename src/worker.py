@@ -29,16 +29,28 @@ class Worker:
                 user_query
             )
 
-            # These operations can be done concurrently
+            # These operations should be asynchronous
             await asyncio.gather(
-                self.io_bound_executor.submit(WhatsAppClient.send_message, ai_answer, sender_phone_number),
-                self.io_bound_executor.submit(insert_data_mysql, sender_phone_number, user_query, ai_answer)
+                self.send_whatsapp_message(ai_answer, sender_phone_number),
+                self.insert_to_database(sender_phone_number, user_query, ai_answer)
             )
 
             whatsapp_logger.info('AI answer sent and data inserted into MySQL')
 
         except Exception as e:
             main_logger.error(f'Error processing request: {e}')
+
+    async def send_whatsapp_message(self, message, phone_number):
+        try:
+            await WhatsAppClient.send_message(message, phone_number)
+        except Exception as e:
+            whatsapp_logger.error(f"Failed to send WhatsApp message: {e}")
+
+    async def insert_to_database(self, phone_number, query, answer):
+        try:
+            await insert_data_mysql(phone_number, query, answer)
+        except Exception as e:
+            mysql_logger.error(f"Failed to insert data to MySQL: {e}")
 
     async def process_queue(self):
         while True:
