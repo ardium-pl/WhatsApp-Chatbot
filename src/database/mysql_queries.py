@@ -19,7 +19,7 @@ async def insert_data_mysql(sender_phone_number, user_query, ai_answer):
             async with pool.acquire() as conn:
                 async with conn.cursor() as cur:
                     # Get user id based on the user phone number
-                    await cur.execute("SELECT id FROM users WHERE whatsapp_number_id = %s", (sender_phone_number,))
+                    await cur.execute("SELECT id FROM users WHERE whatsapp_number_id = %d", (sender_phone_number,))
                     result = await cur.fetchone()
 
                     # Insert query-answer pair of the given user
