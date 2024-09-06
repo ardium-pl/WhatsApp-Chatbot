@@ -8,7 +8,7 @@ async def insert_data_mysql(sender_phone_number, user_query, ai_answer):
         # Używamy asyncmy.create_pool do utworzenia puli połączeń
         async with asyncmy.create_pool(
                 host=MYSQL_HOST,
-                port=MYSQL_PORT,
+                port=49220,
                 user=MYSQL_USER,
                 password=MYSQL_PASSWORD,
                 db=MYSQL_DATABASE
