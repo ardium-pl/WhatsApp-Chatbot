@@ -2,11 +2,11 @@ import aiomysql
 from src.logger import mysql_logger
 from .mysql_config import connection, cursor
 
-
-def get_user_id(whatsapp_number_id):
+# To be updated
+def get_user_id(sender_phone_number):
     try:
-        query = "SELECT id FROM users WHERE whatsapp_number_id = %s"
-        data = (whatsapp_number_id,)
+        query = "SELECT id FROM users WHERE sender_phone_number = %s"
+        data = (sender_phone_number,)
 
         cursor.execute(query, data)
         result = cursor.fetchone()
@@ -21,15 +21,18 @@ def get_user_id(whatsapp_number_id):
         raise RuntimeError("Cannot perform further queries without user_id")
 
 
-async def insert_data_mysql(whatsapp_number_id, user_query, ai_answer):
+async def insert_data_mysql(sender_phone_number, user_query, ai_answer):
     try:
         async with aiomysql.create_pool(host='your_host', port=3306,
                                         user='your_user', password='your_password',
                                         db='your_database') as pool:
             async with pool.acquire() as conn:
                 async with conn.cursor() as cur:
-                    await cur.execute("SELECT id FROM users WHERE whatsapp_number_id = %s", (whatsapp_number_id,))
+                    # Get user id based on the user phone number
+                    await cur.execute("SELECT id FROM users WHERE sender_phone_number = %s", (sender_phone_number,))
                     result = await cur.fetchone()
+
+                    # Insert query-answer pair of the given user
                     if result:
                         user_id = result[0]
                         await cur.execute("INSERT INTO queries (user_id, query, answer) VALUES (%s, %s, %s)",

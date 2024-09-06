@@ -11,10 +11,6 @@ rag_engine = RAGEngine()
 
 @webhook_bp.route('/webhook', methods=['POST'])
 def webhook():
-    if not request.is_json:
-        print("❌ Invalid request data type. Expected data type is JSON.")
-        return '❌', 400
-
     try:
         data = request.get_json()
         main_request_body = data['entry'][0]['changes'][0]['value']
@@ -25,7 +21,7 @@ def webhook():
 
         if errors:
             print(f"⚙️ Request contained an errors field:"
-                    f"\tErrors: {errors}")
+                  f"\tErrors: {errors}")
         if statuses:
             print(f'⚙️ Message status: {statuses[0].get("status")}')
         if messages:
@@ -37,8 +33,8 @@ def webhook():
                 user_query = incoming_message['text'].get('body')
 
                 print(f'✅ Received a POST request containing a text message:\n'
-                        f'\t📩 Message text: {user_query}\n'
-                        f'\t📞 Sender phone number: {sender_phone_number}')
+                      f'\t📩 Message text: {user_query}\n'
+                      f'\t📞 Sender phone number: {sender_phone_number}')
 
                 # Respond with AI answer
                 ai_answer = rag_engine.process_query(user_query)
@@ -47,15 +43,14 @@ def webhook():
 
                 # Insert the query-answer pair into MySQL database
                 insert_data_mysql(sender_phone_number, user_query, ai_answer)
-                # mysql_logger.info('Query-answer pair inserted into MySQL')
 
             else:
                 print(f"⚙️ Received POST request doesn't contain text.\n"
-                        f'\t📩 Message type: {incoming_message.get("type")}.')
+                      f'\t📩 Message type: {incoming_message.get("type")}.')
 
     except Exception as e:
-        print(f"❌ Error accessing a main request body.\n"
-                f"\tError message: {e}")
+        print(f"❌ Error processing a user POST request.\n"
+              f"\tError message: {e}")
     finally:
         return '✅', 200
 
