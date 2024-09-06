@@ -16,3 +16,4 @@ hypercorn
 Flask[async]
 aiomysql
 aiohttp
+Quart

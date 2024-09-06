@@ -5,15 +5,17 @@ from src.whatsapp.whatsapp_client import WhatsAppClient
 from src.database.mysql_queries import insert_data_mysql
 from src.logger import main_logger, whatsapp_logger, mysql_logger
 from src.worker import Worker, insert_to_database, send_whatsapp_message
+from quart import Quart
+
 
 webhook_bp = Blueprint('webhook', __name__)
 rag_engine = RAGEngine()
 
 
 @webhook_bp.route('/webhook', methods=['POST'])
-def webhook():
+async def webhook():
     try:
-        data = request.get_json()
+        data = await request.get_json()
 
         try:
             main_request_body = data['entry'][0]['changes'][0]['value']
@@ -40,13 +42,9 @@ def webhook():
                           f'\t📞 Sender phone number: {sender_phone_number}')
 
                     # Respond with AI answer
-                    ai_answer = rag_engine.process_query(user_query)
-                    send_whatsapp_message(ai_answer, sender_phone_number)
-                    # whatsapp_logger.info('AI answer sent successfully')
-
-                    # Insert the query-answer pair into MySQL database
-                    insert_to_database(sender_phone_number, user_query, ai_answer)
-                    # mysql_logger.info('Query-answer pair inserted into MySQL')
+                    ai_answer = await rag_engine.process_query(user_query)
+                    await send_whatsapp_message(ai_answer, sender_phone_number)
+                    await insert_to_database(sender_phone_number, user_query, ai_answer)
 
                 else:
                     print(f"⚙️ Received POST request doesn't contain text.\n"
