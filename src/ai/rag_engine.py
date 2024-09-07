@@ -32,7 +32,8 @@ def prepare_messages(context, question, chat_history=None):
     and your best judgment.
 
     You also have access to the recent chat history. Use this history to maintain context and provide more relevant 
-    answers. If the current question is related to previous questions, refer to the chat history for continuity.
+    answers. The order of the chat is from the oldest to the newest, so the most recent chat is at the bottom.
+If the current question is related to previous questions, refer to the chat history for continuity.
 
     Presentation content:
     """
