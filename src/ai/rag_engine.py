@@ -42,7 +42,7 @@ def prepare_messages(context, question, chat_history=None):
 
     if chat_history:
         messages.append({"role": "system", "content": "Recent chat history:"})
-        for entry in chat_history:
+        for entry in reversed(chat_history):  # Odwracamy kolejność, aby najstarsze były pierwsze
             messages.append({"role": "user", "content": entry["query"]})
             messages.append({"role": "assistant", "content": entry["answer"]})
         messages.append({"role": "system", "content": "End of chat history. Now answer the following question:"})
@@ -60,27 +60,44 @@ class RAGEngine:
         main_logger.info("RAGEngine initialized")
 
     def process_query(self, question, num_results=10, chat_history=None):
-        main_logger.info(f"Processing query: {question}")
+        main_logger.info(f"🔄 Processing query: {question}")
+
         if chat_history:
             main_logger.info(f"📜 Chat history provided with {len(chat_history)} entries")
-            main_logger.debug(f"🔍 Full chat history: {json.dumps(chat_history, indent=2)}")
+            main_logger.debug("🔍 Full chat history:")
+            for i, entry in enumerate(chat_history, 1):
+                main_logger.debug(f"  {i}. Query: {entry['query'][:50]}...")
+                main_logger.debug(f"     Answer: {entry['answer'][:50]}...")
         else:
             main_logger.info("⚠️ No chat history provided")
 
         try:
             self.mongodb_client.ensure_vector_search_index()
+
             query_embedding = self.openai_client.generate_embeddings(question)
+            main_logger.debug("📊 Query embedding generated")
+
             results = self.mongodb_client.vector_search(query_embedding, num_results=num_results)
-            cosmosdb_logger.info(f"Vector search completed with {len(results)} results")
+            cosmosdb_logger.info(f"🔎 Vector search completed with {len(results)} results")
+
             context = prepare_context(results)
+            main_logger.debug(f"📝 Context prepared (length: {len(context)} characters)")
+
             messages = prepare_messages(context, question, chat_history)
-            main_logger.debug(f"Prepared messages for OpenAI: {messages}")
+            main_logger.info(f"💬 Prepared {len(messages)} messages for OpenAI")
+            main_logger.debug("📄 Messages content:")
+            for i, msg in enumerate(messages, 1):
+                main_logger.debug(f"  {i}. Role: {msg['role']}, Content: {msg['content'][:50]}...")
+
             response = self.openai_client.generate_chat_completion(messages)
             openai_logger.info("✅ Chat completion generated")
+
             main_logger.info("✅ Query processed successfully")
+            main_logger.debug(f"🗨️ AI Response: {response[:100]}...")
+
             return response
         except Exception as e:
-            main_logger.error(f"Error processing query: {e}", exc_info=True)
+            main_logger.error(f"❌ Error processing query: {e}", exc_info=True)
             return "Kurza twarz! Wystąpił niezidentyfikowany błąd. 🐞"
         # finally:
         #     self.mongodb_client.close()
