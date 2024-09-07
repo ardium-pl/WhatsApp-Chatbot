@@ -57,6 +57,7 @@ If the current question is related to previous questions, refer to the chat hist
 class RAGEngine:
     def __init__(self):
         self.mongodb_client = MongoDBClient()
+        self.mongodb_client.connect()  # Jawnie nawiązujemy połączenie
         self.openai_client = OpenAIClient()
         main_logger.info("RAGEngine initialized")
 
