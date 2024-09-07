@@ -24,8 +24,7 @@ async def webhook():
             messages = main_request_body.get('messages')
 
             if errors:
-                whatsapp_logger.warn(f"⚙️ Request contained an errors field:"
-                                     f"\tErrors: {errors}")
+                whatsapp_logger.warn(f"⚙️ Request contained an errors field: \tErrors: {errors}")
             if statuses:
                 whatsapp_logger.info(f'⚙️ Message status: {statuses[0].get("status")}')
             if messages:
@@ -36,15 +35,11 @@ async def webhook():
                     user_query = incoming_message['text'].get('body')
                     whatsapp_logger.info(f'✅ Received message: {user_query} from {sender_phone_number}')
 
-                    whatsapp_logger.info(f'✅ Received a POST request containing a text message:\n'
-                                         f'\t📩 Message text: {user_query}\n'
-                                         f'\t📞 Sender phone number: {sender_phone_number}')
-
                     chat_history = await get_recent_queries(sender_phone_number)
                     whatsapp_logger.info(f'Retrieved chat history with {len(chat_history)} entries')
 
                     ai_answer = await asyncio.to_thread(rag_engine.process_query, user_query, chat_history)
-                    whatsapp_logger.info(' 📜 RAGEngine processed query with chat history')
+                    whatsapp_logger.info('RAGEngine processed query with chat history')
 
                     await asyncio.gather(
                         WhatsAppClient.send_message(ai_answer, sender_phone_number),
@@ -54,7 +49,7 @@ async def webhook():
                     whatsapp_logger.info('AI answer sent and data inserted into MySQL')
 
                     # Add the processed request to the worker's queue
-                    await current_app.worker.request_queue.enqueue({
+                    await current_app.config['worker'].request_queue.enqueue({
                         'sender_phone_number': sender_phone_number,
                         'query': user_query,
                         'answer': ai_answer

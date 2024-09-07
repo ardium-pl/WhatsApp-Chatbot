@@ -3,7 +3,6 @@ from functools import wraps
 import asyncmy
 from src.logger import mysql_logger
 from src.config import MYSQL_HOST, MYSQL_PORT, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE
-from functools import wraps
 from typing import Callable, Any, List
 import asyncio
 
@@ -40,37 +39,38 @@ async def get_pool():
 def with_connection(func):
     @wraps(func)
     async def wrapper(*args, **kwargs):
-        if not hasattr(g, 'pool'):
-            g.pool = await get_pool()
-        async with g.pool.acquire() as conn:
+        pool = await get_pool()
+        async with pool.acquire() as conn:
             async with conn.cursor() as cur:
-                return await func(cur, *args, **kwargs)
+                return await func(cur, conn, *args, **kwargs)
 
     return wrapper
 
 
 @with_connection
-async def insert_user(cur, whatsapp_number_id: int) -> int:
+async def insert_user(cur, conn, whatsapp_number_id: int) -> int:
     await cur.execute("INSERT INTO users (whatsapp_number_id) VALUES (%s)", (whatsapp_number_id,))
     await cur.execute("SELECT LAST_INSERT_ID()")
+    await conn.commit()
     return (await cur.fetchone())[0]
 
 
 @with_connection
-async def get_user_id(cur, whatsapp_number_id: int) -> int:
+async def get_user_id(cur, conn, whatsapp_number_id: int) -> int:
     await cur.execute("SELECT id FROM users WHERE whatsapp_number_id = %s", (whatsapp_number_id,))
     result = await cur.fetchone()
     return result[0] if result else None
 
 
 @with_connection
-async def insert_query(cur, user_id: int, query: str, answer: str) -> None:
+async def insert_query(cur, conn, user_id: int, query: str, answer: str) -> None:
     await cur.execute("INSERT INTO queries (user_id, query, answer) VALUES (%s, %s, %s)",
                       (user_id, query, answer))
+    await conn.commit()
 
 
 @with_connection
-async def get_recent_queries(cur, whatsapp_number_id: int) -> list:
+async def get_recent_queries(cur, conn, whatsapp_number_id: int) -> list:
     await cur.execute("""
         SELECT q.query, q.answer
         FROM queries q
@@ -84,20 +84,28 @@ async def get_recent_queries(cur, whatsapp_number_id: int) -> list:
     return [{"query": query, "answer": answer} for query, answer in results]
 
 
-async def insert_data_mysql(sender_phone_number: str, user_query: str, ai_answer: str) -> None:
+@with_connection
+async def insert_data_mysql(cur, conn, sender_phone_number: str, user_query: str, ai_answer: str) -> None:
     try:
         whatsapp_number_id = int(sender_phone_number)
     except ValueError:
         mysql_logger.error(f"❌ Invalid phone number format: {sender_phone_number}")
         return
 
-    user_id = await get_user_id(whatsapp_number_id)
-    if user_id is None:
-        mysql_logger.info("🔧 Message was sent by the unknown user. Adding new user to the database...")
-        user_id = await insert_user(whatsapp_number_id)
-        mysql_logger.info("✅ New user added!")
+    await cur.execute("SELECT id FROM users WHERE whatsapp_number_id = %s", (whatsapp_number_id,))
+    result = await cur.fetchone()
 
-    await insert_query(user_id, user_query, ai_answer)
+    if not result:
+        mysql_logger.info("🔧 Message was sent by the unknown user. Adding new user to the database...")
+        await cur.execute("INSERT INTO users (whatsapp_number_id) VALUES (%s)", (whatsapp_number_id,))
+        user_id = cur.lastrowid
+        mysql_logger.info("✅ New user added!")
+    else:
+        user_id = result[0]
+
+    await cur.execute("INSERT INTO queries (user_id, query, answer) VALUES (%s, %s, %s)",
+                      (user_id, user_query, ai_answer))
+    await conn.commit()
     mysql_logger.info("✅ New record inserted successfully into MySQL.")
 
 
@@ -109,19 +117,3 @@ async def get_chat_history(sender_phone_number: str) -> list:
         return []
 
     return await get_recent_queries(whatsapp_number_id)
-
-
-# Funkcja do zamykania pul połączeń
-async def close_pools():
-    for pool in pools:
-        await pool.close()
-
-
-# Inicjalizacja pul przy starcie aplikacji
-async def initialize_app():
-    await initialize_pools()
-
-
-# Zamykanie pul przy zamykaniu aplikacji
-async def shutdown_app():
-    await close_pools()
