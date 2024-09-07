@@ -28,9 +28,11 @@ async def insert_data_mysql(sender_phone_number, user_query, ai_answer):
 
                     # Wstawianie danych zapytania i odpowiedzi użytkownika
                     if result:
-                        user_id = result[0]  # user_id jest intem
-                        await cur.execute("INSERT INTO queries (user_id, query, answer) VALUES (%s, %s, %s)",
-                                          (user_id, user_query, ai_answer))
+                        user_id = result[0]
+                        await cur.execute("""
+                            INSERT INTO queries (user_id, query, answer, created_at) 
+                            VALUES (%s, %s, %s, CURRENT_TIMESTAMP)
+                        """, (user_id, user_query, ai_answer))
                         await conn.commit()
                         mysql_logger.info("✅ New record inserted successfully into MySQL.")
                     else:
