@@ -39,3 +39,36 @@ async def insert_data_mysql(sender_phone_number, user_query, ai_answer):
                         mysql_logger.warning(f"❌ No matching user found for WhatsApp number ID: {whatsapp_number_id}")
     except Exception as e:
         mysql_logger.error(f"❌ An error occurred during MySQL operation: {e}")
+
+
+async def get_recent_queries(sender_phone_number):
+    try:
+        async with asyncmy.create_pool(
+                host=MYSQL_HOST,
+                port=int(MYSQL_PORT),
+                user=MYSQL_USER,
+                password=MYSQL_PASSWORD,
+                db=MYSQL_DATABASE
+        ) as pool:
+            async with pool.acquire() as conn:
+                async with conn.cursor() as cur:
+                    try:
+                        whatsapp_number_id = int(sender_phone_number)
+                    except ValueError:
+                        mysql_logger.error(f"❌ Invalid phone number format: {sender_phone_number}")
+                        return []
+
+                    await cur.execute("""
+                        SELECT q.query, q.answer
+                        FROM queries q
+                        JOIN users u ON q.user_id = u.id
+                        WHERE u.whatsapp_number_id = %s
+                        AND q.created_at >= NOW() - INTERVAL 2 HOUR
+                        ORDER BY q.created_at DESC
+                        LIMIT 5
+                    """, (whatsapp_number_id,))
+                    results = await cur.fetchall()
+                    return [{"query": query, "answer": answer} for query, answer in results]
+    except Exception as e:
+        mysql_logger.error(f"❌ An error occurred while fetching recent queries: {e}")
+        return []

@@ -24,7 +24,7 @@ def prepare_context(results):
     return context
 
 
-def prepare_messages(context, question):
+def prepare_messages(context, question, chat_history=None):
     system_prompt = """
     You are a helpful assistant designed to provide information about the Euvic Services presentations / pdf files.
     Try to answer questions based on the information provided in the presentation content below.
@@ -32,6 +32,17 @@ def prepare_messages(context, question):
 
     Presentation content:
     """
+    messages = [
+        {"role": "system", "content": system_prompt + context},
+    ]
+
+    if chat_history:
+        for entry in chat_history:
+            messages.append({"role": "user", "content": entry["query"]})
+            messages.append({"role": "assistant", "content": entry["answer"]})
+
+    messages.append({"role": "user", "content": question})
+
     main_logger.debug("Messages prepared for chat completion")
     return [
         {"role": "system", "content": system_prompt + context},
@@ -45,7 +56,7 @@ class RAGEngine:
         self.openai_client = OpenAIClient()
         main_logger.info("RAGEngine initialized")
 
-    def process_query(self, question, num_results=10):
+    def process_query(self, question, num_results=10, chat_history=None):
         main_logger.info(f"Processing query: {question}")
         self.mongodb_client.connect()
         try:
@@ -54,7 +65,7 @@ class RAGEngine:
             results = self.mongodb_client.vector_search(query_embedding, num_results)
             cosmosdb_logger.info(f"Vector search completed with {len(results)} results")
             context = prepare_context(results)
-            messages = prepare_messages(context, question)
+            messages = prepare_messages(context, question, chat_history)
             response = self.openai_client.generate_chat_completion(messages)
             openai_logger.info("Chat completion generated")
             main_logger.info("Query processed successfully")

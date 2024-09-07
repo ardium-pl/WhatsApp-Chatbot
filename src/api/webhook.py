@@ -3,7 +3,7 @@ from src.logger import whatsapp_logger, main_logger
 from src.config import WEBHOOK_VERIFY_TOKEN
 from src.ai import RAGEngine
 from src.whatsapp.whatsapp_client import WhatsAppClient
-from src.database.mysql_queries import insert_data_mysql
+from src.database.mysql_queries import insert_data_mysql, get_recent_queries
 import traceback
 import asyncio
 
@@ -35,13 +35,17 @@ async def webhook():
                 # Check if the incoming message contains text
                 if incoming_message.get('type') == 'text':
                     user_query = incoming_message['text'].get('body')
+                    whatsapp_logger.info(f'✅ Received message: {user_query} from {sender_phone_number}')
 
                     whatsapp_logger.info(f'✅ Received a POST request containing a text message:\n'
                                          f'\t📩 Message text: {user_query}\n'
                                          f'\t📞 Sender phone number: {sender_phone_number}')
 
-                    # Respond with AI answer
-                    ai_answer = rag_engine.process_query(user_query)
+                    # Pobierz historię zapytań
+                    chat_history = await get_recent_queries(sender_phone_number)
+
+                    # Przetwórz zapytanie z uwzględnieniem historii
+                    ai_answer = rag_engine.process_query(user_query, chat_history=chat_history)
 
                     # Use asyncio to run these potentially blocking operations concurrently
                     await asyncio.gather(
@@ -59,9 +63,7 @@ async def webhook():
                     })
 
                 else:
-                    whatsapp_logger.warn(f"⚙️ Received POST request doesn't contain text.\n"
-                                         f'\t📩 Message type: {incoming_message.get("type")}.')
-
+                    whatsapp_logger.warn(f"Received non-text message type: {incoming_message.get('type')}")
         except Exception as e:
             whatsapp_logger.critical(f"❌ An error occurred during main app process inside of /webhook.\n"
                                      f"\tError message: {e}")
@@ -69,8 +71,7 @@ async def webhook():
             return '✅', 200
 
     except Exception as e:
-        print(f'❌ Error processing a HTTP request.\n'
-              f'\tError messages {e}.')
+        whatsapp_logger.error(f'Error processing HTTP request: {e}')
         return '❌', 400
 
 
