@@ -1,26 +1,42 @@
 import asyncio
-from flask import Flask, g
+from functools import wraps
+from flask import Flask, g, request
 from hypercorn.config import Config
 from hypercorn.asyncio import serve
+from quart import Quart
+from quart_flask_patch import patch_quart
 from src.api.webhook import webhook_bp
 from src.config import PORT
-from src.worker import Worker, run_worker
+from src.worker import Worker
 from src.logger import main_logger
-from src.database.mysql_queries import initialize_pools, close_pools
+from src.database.mysql_queries import initialize_pools, close_pools, get_pool
 
-app = Flask(__name__)
+# Tworzymy aplikację Quart zamiast Flask
+app = Quart(__name__)
+patch_quart(app)  # Pozwala na używanie rozszerzeń Flask z Quart
 app.register_blueprint(webhook_bp)
 
 # Initialize Worker
 worker = Worker()
 
+def async_to_sync(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        return asyncio.run(f(*args, **kwargs))
+    return wrapper
 
 @app.before_request
-def before_request():
+async def before_request():
     g.worker = worker
+    g.pool = await get_pool()
 
+@app.after_request
+async def after_request(response):
+    if hasattr(g, 'pool'):
+        await g.pool.release()
+    return response
 
-async def run_flask():
+async def run_quart():
     config = Config()
     config.bind = [f"0.0.0.0:{PORT}"]
     await serve(app, config)
@@ -40,9 +56,9 @@ async def main():
     main_logger.info("Starting the application")
     await initialize_app()
     try:
-        flask_task = asyncio.create_task(run_flask())
+        quart_task = asyncio.create_task(run_quart())
         worker_task = asyncio.create_task(worker.run())
-        await asyncio.gather(flask_task, worker_task)
+        await asyncio.gather(quart_task, worker_task)
     finally:
         await shutdown_app()
 

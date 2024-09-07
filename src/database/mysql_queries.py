@@ -4,6 +4,7 @@ from src.config import MYSQL_HOST, MYSQL_PORT, MYSQL_USER, MYSQL_PASSWORD, MYSQL
 from functools import wraps
 from typing import Callable, Any, List
 import asyncio
+from quart import g
 
 # Lista pul połączeń
 pools: List[asyncmy.Pool] = []
@@ -33,14 +34,14 @@ async def get_pool():
     return pool
 
 
-def with_connection(func: Callable) -> Callable:
+def with_connection(func):
     @wraps(func)
-    async def wrapper(*args, **kwargs) -> Any:
-        pool = await get_pool()
-        async with pool.acquire() as conn:
+    async def wrapper(*args, **kwargs):
+        if not hasattr(g, 'pool'):
+            g.pool = await get_pool()
+        async with g.pool.acquire() as conn:
             async with conn.cursor() as cur:
                 return await func(cur, *args, **kwargs)
-
     return wrapper
 
 
