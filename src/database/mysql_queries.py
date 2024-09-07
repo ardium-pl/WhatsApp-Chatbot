@@ -77,7 +77,7 @@ async def get_recent_queries(cur, conn, whatsapp_number_id: int) -> list:
         JOIN users u ON q.user_id = u.id
         WHERE u.whatsapp_number_id = %s
         AND q.created_at >= NOW() - INTERVAL 2 HOUR
-        ORDER BY q.created_at ASC
+        ORDER BY q.created_at DESC
         LIMIT 5
     """, (whatsapp_number_id,))
     results = await cur.fetchall()
