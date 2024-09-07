@@ -69,7 +69,7 @@ class RAGEngine:
         try:
             self.mongodb_client.ensure_vector_search_index()
             query_embedding = self.openai_client.generate_embeddings(question)
-            results = self.mongodb_client.vector_search(query_embedding, num_results)
+            results = self.mongodb_client.vector_search(query_embedding, num_results=10)
             cosmosdb_logger.info(f"Vector search completed with {len(results)} results")
             context = prepare_context(results)
             messages = prepare_messages(context, question, chat_history)
