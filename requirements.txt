@@ -17,3 +17,4 @@ aiohttp
 Quart
 pytz
 asyncmy
+quart_flask_patch
