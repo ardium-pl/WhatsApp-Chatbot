@@ -2,15 +2,18 @@ import asyncmy
 from src.logger import mysql_logger
 from src.config import MYSQL_HOST, MYSQL_PORT, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE
 from functools import wraps
-from typing import Callable, Any
+from typing import Callable, Any, List
+import asyncio
 
-# Globalna pula połączeń
-pool = None
+# Lista pul połączeń
+pools: List[asyncmy.Pool] = []
+MAX_POOLS = 4
+current_pool = 0
 
 
-async def get_pool():
-    global pool
-    if pool is None:
+async def initialize_pools():
+    global pools
+    for _ in range(MAX_POOLS):
         pool = await asyncmy.create_pool(
             host=MYSQL_HOST,
             port=int(MYSQL_PORT),
@@ -18,6 +21,15 @@ async def get_pool():
             password=MYSQL_PASSWORD,
             db=MYSQL_DATABASE
         )
+        pools.append(pool)
+
+
+async def get_pool():
+    global current_pool
+    if not pools:
+        await initialize_pools()
+    pool = pools[current_pool]
+    current_pool = (current_pool + 1) % MAX_POOLS
     return pool
 
 
@@ -92,3 +104,19 @@ async def get_chat_history(sender_phone_number: str) -> list:
         return []
 
     return await get_recent_queries(whatsapp_number_id)
+
+
+# Funkcja do zamykania pul połączeń
+async def close_pools():
+    for pool in pools:
+        await pool.close()
+
+
+# Inicjalizacja pul przy starcie aplikacji
+async def initialize_app():
+    await initialize_pools()
+
+
+# Zamykanie pul przy zamykaniu aplikacji
+async def shutdown_app():
+    await close_pools()
