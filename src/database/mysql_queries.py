@@ -1,3 +1,5 @@
+import json
+
 from quart import g
 from functools import wraps
 import asyncmy
@@ -72,7 +74,7 @@ async def insert_query(cur, conn, user_id: int, query: str, answer: str) -> None
 @with_connection
 async def get_recent_queries(cur, conn, whatsapp_number_id: int) -> list:
     await cur.execute("""
-        SELECT q.query, q.answer
+        SELECT q.query, q.answer, q.created_at
         FROM queries q
         JOIN users u ON q.user_id = u.id
         WHERE u.whatsapp_number_id = %s
@@ -81,7 +83,20 @@ async def get_recent_queries(cur, conn, whatsapp_number_id: int) -> list:
         LIMIT 5
     """, (whatsapp_number_id,))
     results = await cur.fetchall()
-    return [{"query": query, "answer": answer} for query, answer in results]
+    chat_history = [{"query": query, "answer": answer, "created_at": created_at.isoformat()} for
+                    query, answer, created_at in results]
+
+    # Szczegółowe logowanie historii czatu
+    log_message = f"📜 Chat history for user {whatsapp_number_id}:\n"
+    for i, entry in enumerate(chat_history, 1):
+        log_message += f"  {i}. 🗨️ Query: {entry['query'][:50]}{'...' if len(entry['query']) > 50 else ''}\n"
+        log_message += f"     💬 Answer: {entry['answer'][:50]}{'...' if len(entry['answer']) > 50 else ''}\n"
+        log_message += f"     🕒 Time: {entry['created_at']}\n"
+
+    mysql_logger.info(log_message)
+    mysql_logger.debug(f"Full chat history: {json.dumps(chat_history, indent=2)}")
+
+    return chat_history
 
 
 @with_connection
@@ -116,4 +131,6 @@ async def get_chat_history(sender_phone_number: str) -> list:
         mysql_logger.error(f"❌ Invalid phone number format: {sender_phone_number}")
         return []
 
-    return await get_recent_queries(whatsapp_number_id)
+    chat_history = await get_recent_queries(whatsapp_number_id)
+    mysql_logger.info(f"📊 Retrieved {len(chat_history)} entries from chat history for user {sender_phone_number}")
+    return chat_history

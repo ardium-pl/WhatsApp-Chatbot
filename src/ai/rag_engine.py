@@ -2,6 +2,7 @@ from src.database.mongodb_client import MongoDBClient
 from src.ai.openai_client import OpenAIClient
 from datetime import datetime
 from src.logger import main_logger, cosmosdb_logger, openai_logger
+import json
 
 
 def prepare_context(results):
@@ -61,25 +62,25 @@ class RAGEngine:
     def process_query(self, question, num_results=10, chat_history=None):
         main_logger.info(f"Processing query: {question}")
         if chat_history:
-            main_logger.info(f"Chat history provided with {len(chat_history)} entries")
+            main_logger.info(f"📜 Chat history provided with {len(chat_history)} entries")
+            main_logger.debug(f"🔍 Full chat history: {json.dumps(chat_history, indent=2)}")
         else:
-            main_logger.info("No chat history provided")
+            main_logger.info("⚠️ No chat history provided")
 
-        self.mongodb_client.connect()
         try:
             self.mongodb_client.ensure_vector_search_index()
             query_embedding = self.openai_client.generate_embeddings(question)
-            results = self.mongodb_client.vector_search(query_embedding, num_results=10)
+            results = self.mongodb_client.vector_search(query_embedding, num_results=num_results)
             cosmosdb_logger.info(f"Vector search completed with {len(results)} results")
             context = prepare_context(results)
             messages = prepare_messages(context, question, chat_history)
             main_logger.debug(f"Prepared messages for OpenAI: {messages}")
             response = self.openai_client.generate_chat_completion(messages)
-            openai_logger.info("Chat completion generated")
-            main_logger.info("Query processed successfully")
+            openai_logger.info("✅ Chat completion generated")
+            main_logger.info("✅ Query processed successfully")
             return response
         except Exception as e:
-            main_logger.error(f"Error processing query: {e}")
+            main_logger.error(f"Error processing query: {e}", exc_info=True)
             return "Kurza twarz! Wystąpił niezidentyfikowany błąd. 🐞"
-        finally:
-            self.mongodb_client.close()
+        # finally:
+        #     self.mongodb_client.close()

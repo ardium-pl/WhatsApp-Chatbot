@@ -5,23 +5,37 @@ from src.config import COSMOSDB_CONNECTION_STRING, DB_NAME, COSMOS_COLLECTION_NA
 
 
 class MongoDBClient:
+    _instance = None
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(MongoDBClient, cls).__new__(cls)
+            cls._instance.__initialized = False
+        return cls._instance
+
     def __init__(self):
+        if self.__initialized:
+            return
         self.client = None
         self.db = None
         self.collection = None
+        self.__initialized = True
 
     def connect(self):
-        try:
-            self.client = MongoClient(COSMOSDB_CONNECTION_STRING)
-            self.client.admin.command("ismaster")
-            self.db = self.client[DB_NAME]
-            self.collection = self.db[COSMOS_COLLECTION_NAME]
-            logging.info("MongoDB connection established successfully.")
-        except ConnectionFailure as e:
-            logging.error(f"Could not connect to MongoDB due to: {e}")
-            raise ConnectionError("Failed to connect to MongoDB.") from e
+        if self.client is None:
+            try:
+                self.client = MongoClient(COSMOSDB_CONNECTION_STRING)
+                self.client.admin.command("ismaster")
+                self.db = self.client[DB_NAME]
+                self.collection = self.db[COSMOS_COLLECTION_NAME]
+                logging.info("MongoDB connection established successfully.")
+            except ConnectionFailure as e:
+                logging.error(f"Could not connect to MongoDB due to: {e}")
+                raise ConnectionError("Failed to connect to MongoDB.") from e
 
     def ensure_vector_search_index(self):
+        if self.client is None:
+            self.connect()
         try:
             index_name = "vectorSearchIndex"
             existing_indexes = self.collection.list_indexes()
@@ -45,8 +59,9 @@ class MongoDBClient:
             raise
 
     def vector_search(self, query_embedding, num_results=10):
+        if self.client is None:
+            self.connect()
         try:
-            # Upewniamy się, że num_results jest liczbą całkowitą
             k = int(num_results)
             results = self.collection.aggregate([
                 {
@@ -73,9 +88,5 @@ class MongoDBClient:
 
             return list(results)
         except Exception as e:
-            logging.error(f"Vector search operation failed: {e}")
+            logging.error(f"Vector search operation failed: {e}", exc_info=True)
             return []
-
-    def close(self):
-        if self.client:
-            self.client.close()

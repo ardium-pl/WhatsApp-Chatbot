@@ -3,9 +3,10 @@ from src.logger import whatsapp_logger, main_logger
 from src.config import WEBHOOK_VERIFY_TOKEN
 from src.ai import RAGEngine
 from src.whatsapp.whatsapp_client import WhatsAppClient
-from src.database.mysql_queries import insert_data_mysql, get_recent_queries
+from src.database.mysql_queries import insert_data_mysql, get_recent_queries, get_chat_history
 import traceback
 import asyncio
+import json
 
 webhook_bp = Blueprint('webhook', __name__)
 rag_engine = RAGEngine()
@@ -15,56 +16,57 @@ rag_engine = RAGEngine()
 async def webhook():
     try:
         data = await request.get_json()
+        main_request_body = data['entry'][0]['changes'][0]['value']
 
-        try:
-            main_request_body = data['entry'][0]['changes'][0]['value']
+        errors = main_request_body.get('errors')
+        statuses = main_request_body.get('statuses')
+        messages = main_request_body.get('messages')
 
-            errors = main_request_body.get('errors')
-            statuses = main_request_body.get('statuses')
-            messages = main_request_body.get('messages')
+        if errors:
+            whatsapp_logger.warn(f"⚙️ Request contained an errors field: \tErrors: {errors}")
+        if statuses:
+            whatsapp_logger.info(f'⚙️ Message status: {statuses[0].get("status")}')
+        if messages:
+            incoming_message = messages[0]
+            sender_phone_number = incoming_message.get("from")
 
-            if errors:
-                whatsapp_logger.warn(f"⚙️ Request contained an errors field: \tErrors: {errors}")
-            if statuses:
-                whatsapp_logger.info(f'⚙️ Message status: {statuses[0].get("status")}')
-            if messages:
-                incoming_message = messages[0]
-                sender_phone_number = incoming_message.get("from")
+            if incoming_message.get('type') == 'text':
+                user_query = incoming_message['text'].get('body')
+                whatsapp_logger.info(f'✅ Received message: {user_query} from {sender_phone_number}')
 
-                if incoming_message.get('type') == 'text':
-                    user_query = incoming_message['text'].get('body')
-                    whatsapp_logger.info(f'✅ Received message: {user_query} from {sender_phone_number}')
+                # Pobierz historię zapytań
+                chat_history = await get_chat_history(sender_phone_number)
+                whatsapp_logger.info(f'📚 Retrieved chat history with {len(chat_history)} entries')
+                whatsapp_logger.debug(f'🔍 Full chat history: {json.dumps(chat_history, indent=2)}')
 
-                    chat_history = await get_recent_queries(sender_phone_number)
-                    whatsapp_logger.info(f'Retrieved chat history with {len(chat_history)} entries')
+                # Przetwórz zapytanie z uwzględnieniem historii
+                main_logger.info(f'🔄 Processing query: {user_query}')
+                main_logger.info(f'📜 Chat history provided with {len(chat_history)} entries')
 
-                    ai_answer = await asyncio.to_thread(rag_engine.process_query, user_query, chat_history)
-                    whatsapp_logger.info('RAGEngine processed query with chat history')
+                ai_answer = await asyncio.to_thread(rag_engine.process_query, user_query, chat_history=chat_history)
+                whatsapp_logger.info('🤖 RAGEngine processed query with chat history')
 
-                    await asyncio.gather(
-                        WhatsAppClient.send_message(ai_answer, sender_phone_number),
-                        insert_data_mysql(sender_phone_number, user_query, ai_answer)
-                    )
+                # Use asyncio to run these potentially blocking operations concurrently
+                await asyncio.gather(
+                    WhatsAppClient.send_message(ai_answer, sender_phone_number),
+                    insert_data_mysql(sender_phone_number, user_query, ai_answer)
+                )
 
-                    whatsapp_logger.info('AI answer sent and data inserted into MySQL')
+                whatsapp_logger.info('✅ AI answer sent and data inserted into MySQL')
 
-                    # Add the processed request to the worker's queue
-                    await current_app.config['worker'].request_queue.enqueue({
-                        'sender_phone_number': sender_phone_number,
-                        'query': user_query,
-                        'answer': ai_answer
-                    })
+                # Add the processed request to the worker's queue
+                await current_app.config['worker'].request_queue.enqueue({
+                    'sender_phone_number': sender_phone_number,
+                    'query': user_query,
+                    'answer': ai_answer
+                })
+            else:
+                whatsapp_logger.warn(f"⚠️ Received non-text message type: {incoming_message.get('type')}")
 
-                else:
-                    whatsapp_logger.warn(f"Received non-text message type: {incoming_message.get('type')}")
-        except Exception as e:
-            whatsapp_logger.critical(f"Error in webhook processing: {e}")
-            whatsapp_logger.error(traceback.format_exc())
-        finally:
-            return '✅', 200
+        return '✅', 200
 
     except Exception as e:
-        whatsapp_logger.error(f'Error processing HTTP request: {e}')
+        whatsapp_logger.error(f'❌ Error processing HTTP request: {e}')
         whatsapp_logger.error(traceback.format_exc())
         return '❌', 400
 
