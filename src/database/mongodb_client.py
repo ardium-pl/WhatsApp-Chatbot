@@ -46,13 +46,15 @@ class MongoDBClient:
 
     def vector_search(self, query_embedding, num_results=10):
         try:
+            # Upewniamy się, że num_results jest liczbą całkowitą
+            k = int(num_results)
             results = self.collection.aggregate([
                 {
                     "$search": {
                         "cosmosSearch": {
                             "vector": query_embedding,
                             "path": "vector",
-                            "k": num_results
+                            "k": k
                         }
                     }
                 },
