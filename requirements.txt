@@ -8,13 +8,11 @@ tenacity~=9.0.0
 logging~=0.4.9.6
 datetime~=5.5
 config~=0.5.1
-mysql-connector-python~=9.0.0
 requests~=2.32.3
 psutil
 Thread
 hypercorn
 Flask[async]
-aiomysql
 aiohttp
 Quart
 pytz
