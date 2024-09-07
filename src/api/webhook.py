@@ -43,9 +43,11 @@ async def webhook():
 
                     # Pobierz historię zapytań
                     chat_history = await get_recent_queries(sender_phone_number)
+                    whatsapp_logger.info(f'Retrieved chat history with {len(chat_history)} entries')
 
                     # Przetwórz zapytanie z uwzględnieniem historii
                     ai_answer = rag_engine.process_query(user_query, chat_history=chat_history)
+                    whatsapp_logger.info('RAGEngine processed query with chat history')
 
                     # Use asyncio to run these potentially blocking operations concurrently
                     await asyncio.gather(
@@ -65,13 +67,14 @@ async def webhook():
                 else:
                     whatsapp_logger.warn(f"Received non-text message type: {incoming_message.get('type')}")
         except Exception as e:
-            whatsapp_logger.critical(f"❌ An error occurred during main app process inside of /webhook.\n"
-                                     f"\tError message: {e}")
+            whatsapp_logger.critical(f"Error in webhook processing: {e}")
+            whatsapp_logger.error(traceback.format_exc())
         finally:
             return '✅', 200
 
     except Exception as e:
         whatsapp_logger.error(f'Error processing HTTP request: {e}')
+        whatsapp_logger.error(traceback.format_exc())
         return '❌', 400
 
 
