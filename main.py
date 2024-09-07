@@ -18,6 +18,7 @@ worker = Worker()
 @app.before_serving
 async def before_serving():
     await initialize_pools()
+    app.worker = worker  # Make worker accessible via app
 
 
 @app.after_serving
@@ -27,14 +28,14 @@ async def after_serving():
 
 @app.before_request
 async def before_request():
-    g.worker = worker
+    g.worker = app.worker
     g.pool = await get_pool()
 
 
 @app.after_request
 async def after_request(response):
     if hasattr(g, 'pool'):
-        await g.pool.release()
+        await g.pool.release(g.pool)  # Pass the pool as an argument
     return response
 
 
