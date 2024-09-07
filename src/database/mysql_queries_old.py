@@ -44,6 +44,7 @@ async def insert_data_mysql(sender_phone_number, user_query, ai_answer):
     except Exception as e:
         mysql_logger.error(f"❌ An error occurred during MySQL operation: {e}")
 
+
 async def get_recent_queries(sender_phone_number):
     try:
         async with asyncmy.create_pool(

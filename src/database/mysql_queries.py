@@ -1,13 +1,13 @@
+from quart import g
+from functools import wraps
 import asyncmy
 from src.logger import mysql_logger
 from src.config import MYSQL_HOST, MYSQL_PORT, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE
 from functools import wraps
 from typing import Callable, Any, List
 import asyncio
-from quart import g
 
-# Lista pul połączeń
-pools: List[asyncmy.Pool] = []
+pools = []
 MAX_POOLS = 4
 current_pool = 0
 
@@ -25,10 +25,13 @@ async def initialize_pools():
         pools.append(pool)
 
 
+async def close_pools():
+    for pool in pools:
+        await pool.close()
+
+
 async def get_pool():
     global current_pool
-    if not pools:
-        await initialize_pools()
     pool = pools[current_pool]
     current_pool = (current_pool + 1) % MAX_POOLS
     return pool
@@ -42,6 +45,7 @@ def with_connection(func):
         async with g.pool.acquire() as conn:
             async with conn.cursor() as cur:
                 return await func(cur, *args, **kwargs)
+
     return wrapper
 
 
