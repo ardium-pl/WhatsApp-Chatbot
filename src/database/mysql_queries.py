@@ -79,7 +79,7 @@ async def insert_user(cur, conn, whatsapp_number_id: int) -> int:
 
 
 @with_connection(error_message="❌ Failed to retrieve a user id.")
-async def get_user_id(cur, whatsapp_number_id: int) -> int | None:
+async def get_user_id(cur, conn, whatsapp_number_id: int) -> int | None:
     await cur.execute("SELECT id FROM users WHERE whatsapp_number_id = %s", (whatsapp_number_id,))
     result = await cur.fetchone()
 
@@ -105,7 +105,7 @@ async def insert_query(cur, conn, user_id: int, query: str, answer: str) -> None
 
 
 @with_connection(error_message="❌ Failed to retrieve recent queries form chat history.")
-async def get_recent_queries(cur, whatsapp_number_id: int) -> list:
+async def get_recent_queries(cur, conn, whatsapp_number_id: int) -> list:
     await cur.execute("""
         SELECT q.query, q.answer, q.created_at
         FROM queries q
