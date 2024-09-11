@@ -3,7 +3,7 @@ from src.logger import whatsapp_logger, main_logger
 from src.config import WEBHOOK_VERIFY_TOKEN
 from src.ai import RAGEngine
 from src.whatsapp.whatsapp_client import WhatsAppClient
-from src.database.mysql_queries import insert_data_mysql, get_recent_queries, get_chat_history
+from src.database.mysql_queries import insert_data_mysql, get_recent_queries
 import traceback
 import asyncio
 import json
@@ -28,27 +28,24 @@ async def webhook():
             whatsapp_logger.info(f'⚙️ Message status: {statuses[0].get("status")}')
         if messages:
             incoming_message = messages[0]
-            sender_phone_number = incoming_message.get("from")
+            sender_phone_number = int(incoming_message.get("from"))
 
             if incoming_message.get('type') == 'text':
                 user_query = incoming_message['text'].get('body')
                 whatsapp_logger.info(f'✅ Received message: {user_query} from {sender_phone_number}')
 
                 # Pobierz historię zapytań
-                chat_history = await get_chat_history(sender_phone_number)
-                whatsapp_logger.info(f'📚 Retrieved chat history with {len(chat_history)} entries')
-                whatsapp_logger.debug(f'🔍 Full chat history: {json.dumps(chat_history, indent=2)}')
+                chat_history = await get_recent_queries(sender_phone_number)
 
                 # Przetwórz zapytanie z uwzględnieniem historii
                 main_logger.info(f'🔄 Processing query: {user_query}')
-                main_logger.info(f'📜 Chat history provided with {len(chat_history)} entries')
 
                 ai_answer = await asyncio.to_thread(rag_engine.process_query, user_query, chat_history=chat_history)
                 whatsapp_logger.info('🤖 RAGEngine processed query with chat history')
 
                 # Use asyncio to run these potentially blocking operations concurrently
                 await asyncio.gather(
-                    WhatsAppClient.send_message(ai_answer, sender_phone_number),
+                    # WhatsAppClient.send_message(ai_answer, sender_phone_number),
                     insert_data_mysql(sender_phone_number, user_query, ai_answer)
                 )
 

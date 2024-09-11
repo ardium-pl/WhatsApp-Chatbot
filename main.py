@@ -37,7 +37,3 @@ async def main():
     quart_task = asyncio.create_task(run_quart())
     worker_task = asyncio.create_task(worker.run())
     await asyncio.gather(quart_task, worker_task)
-
-
-if __name__ == '__main__':
-    asyncio.run(main())
