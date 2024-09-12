@@ -33,7 +33,7 @@ def prepare_messages(context, question, chat_history=None):
 
     You also have access to the recent chat history. Use this history to maintain context and provide more relevant 
     answers. The order of the chat is from the oldest to the newest, so the most recent chat is at the bottom.
-If the current question is related to previous questions, refer to the chat history for continuity.
+    If the current question is related to previous questions, refer to the chat history for continuity.
 
     Presentation content:
     """
@@ -100,6 +100,6 @@ class RAGEngine:
             return response
         except Exception as e:
             main_logger.error(f"❌ Error processing query: {e}", exc_info=True)
-            return "Kurza twarz! Wystąpił niezidentyfikowany błąd. 🐞"
+            return f"Kurza twarz! Wystąpił niezidentyfikowany błąd: 🐞 ERROR: [{e}]."
         # finally:
         #     self.mongodb_client.close()
