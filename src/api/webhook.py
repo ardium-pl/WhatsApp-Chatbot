@@ -40,7 +40,7 @@ async def webhook():
                 # Przetwórz zapytanie z uwzględnieniem historii
                 main_logger.info(f'🔄 Processing query: {user_query}')
 
-                ai_answer = await asyncio.to_thread(rag_engine.process_query(user_query, num_results=10, chat_history=chat_history))
+                ai_answer = await asyncio.to_thread(rag_engine.process_query, user_query, chat_history=chat_history)
                 whatsapp_logger.info('🤖 RAGEngine processed query with chat history')
 
                 # Use asyncio to run these potentially blocking operations concurrently
