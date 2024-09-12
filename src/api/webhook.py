@@ -43,7 +43,8 @@ async def webhook():
                 ai_answer = await asyncio.to_thread(rag_engine.process_query, user_query, chat_history=chat_history)
                 whatsapp_logger.info('🤖 RAGEngine processed query with chat history')
 
-                # Use asyncio to run these potentially blocking operations concurrently -> TODO change to asyncio.task_group
+                # Use asyncio to run these potentially blocking operations concurrently
+                # -> TODO change to asyncio.task_group
                 await asyncio.gather(
                     # WhatsAppClient.send_message(ai_answer, sender_phone_number),
                     insert_data_mysql(sender_phone_number, user_query, ai_answer)
@@ -51,12 +52,6 @@ async def webhook():
 
                 whatsapp_logger.info('✅ AI answer sent and data inserted into MySQL')
 
-                # Add the processed request to the worker's queue
-                await current_app.config['worker'].request_queue.enqueue({
-                    'sender_phone_number': sender_phone_number,
-                    'query': user_query,
-                    'answer': ai_answer
-                })
             else:
                 whatsapp_logger.warn(f"⚠️ Received non-text message type: {incoming_message.get('type')}")
 
