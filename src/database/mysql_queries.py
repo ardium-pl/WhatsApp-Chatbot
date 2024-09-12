@@ -1,8 +1,8 @@
 import json
 from typing import Union
 from functools import wraps
-import asyncmy
-from asyncmy import Pool
+import aiomysql
+from aiomysql import Pool
 from src.logger import mysql_logger
 from src.config import MYSQL_HOST, MYSQL_PORT, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE, POOL_CONNECT_TIMEOUT, \
     POOL_MIN_SIZE, POOL_MAX_SIZE, ACQUIRE_CONN_TIMEOUT
@@ -15,7 +15,7 @@ pool: Union[Pool, None] = None
 async def initialize_connection_pool() -> Pool | None:
     global pool
     try:
-        pool = await asyncmy.create_pool(
+        pool = await aiomysql.create_pool(
             minsize=POOL_MIN_SIZE,
             maxsize=POOL_MAX_SIZE,
             connect_timeout=POOL_CONNECT_TIMEOUT,

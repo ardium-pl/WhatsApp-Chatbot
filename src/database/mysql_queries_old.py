@@ -1,11 +1,11 @@
-import asyncmy
+import aiomysql
 from src.logger import mysql_logger
 from src.config import MYSQL_HOST, MYSQL_PORT, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE
 
 
 async def insert_data_mysql(sender_phone_number, user_query, ai_answer):
     try:
-        async with asyncmy.create_pool(
+        async with aiomysql.create_pool(
                 host=MYSQL_HOST,
                 port=int(MYSQL_PORT),
                 user=MYSQL_USER,
@@ -47,7 +47,7 @@ async def insert_data_mysql(sender_phone_number, user_query, ai_answer):
 
 async def get_recent_queries(sender_phone_number):
     try:
-        async with asyncmy.create_pool(
+        async with aiomysql.create_pool(
                 host=MYSQL_HOST,
                 port=int(MYSQL_PORT),
                 user=MYSQL_USER,
