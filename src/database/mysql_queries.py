@@ -119,7 +119,7 @@ def with_connection(pool_type="read", error_message="❌ A database error occurr
 
 @with_connection(pool_type="read",
                  error_message="❌ Failed to establish a test connection. Pool probably isn't working correctly.")
-async def create_test_connection(cur, conn):
+async def create_test_connection(cur, conn, *args, **kwargs):
     await cur.execute("SELECT 1")
     result = await cur.fetchone()
     if result[0] == 1:
