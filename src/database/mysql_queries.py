@@ -59,19 +59,26 @@ def with_connection(error_message="❌ A database error occurred."):
     def decorator(func):
         @wraps(func)
         async def wrapper(*args, **kwargs):
+            pool, conn = None, None
             try:
                 pool = await get_pool()
 
                 conn = await asyncio.wait_for(pool.acquire(), timeout=ACQUIRE_CONN_TIMEOUT)
-                async with conn:
-                    async with conn.cursor() as cur:
-                        return await func(cur, conn, *args, **kwargs)
+                async with conn.cursor() as cur:
+                    return await func(cur, conn, *args, **kwargs)
 
             except asyncio.TimeoutError:
                 mysql_logger.error("⏱️ Timed out while waiting to acquire a connection from the pool.")
             except Exception as e:
                 mysql_logger.error(error_message)
                 mysql_logger.error(f"Error message: {e}")
+            finally:
+                if pool and conn:
+                    try:
+                        pool.release(conn)
+                    except Exception as e:
+                        mysql_logger.error("❌ An error occurred during releasing the connection.")
+                        mysql_logger.error(f"Error message: {e}")
 
             return None
         return wrapper

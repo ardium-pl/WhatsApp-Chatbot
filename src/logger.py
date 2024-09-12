@@ -23,20 +23,21 @@ class PolandFormatter(logging.Formatter):
 
 
 def setup_logger(name, log_file, level=logging.INFO):
-    formatter = PolandFormatter('%(asctime)s %(levelname)s %(message)s')
-
-    handler = RotatingFileHandler(log_file, maxBytes=10 * 1024 * 1024, backupCount=5)
-    handler.setFormatter(formatter)
-
     logger = logging.getLogger(name)
-    logger.setLevel(level)
-    logger.addHandler(handler)
+    if logger.hasHandlers():
+        formatter = PolandFormatter('%(asctime)s %(levelname)s %(message)s')
 
-    # Add console handler
-    console_handler = logging.StreamHandler()
-    console_handler.setFormatter(formatter)
-    console_handler.encoding = 'utf-8'
-    logger.addHandler(console_handler)
+        file_handler = RotatingFileHandler(log_file, maxBytes=10 * 1024 * 1024, backupCount=5)
+        file_handler.setFormatter(formatter)
+        logger.addHandler(file_handler)
+
+        # Add console handler
+        console_handler = logging.StreamHandler()
+        console_handler.setFormatter(formatter)
+        console_handler.encoding = 'utf-8'
+        logger.addHandler(console_handler)
+
+    logger.setLevel(level)
 
     return logger
 
