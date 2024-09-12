@@ -92,7 +92,6 @@ def with_connection(pool_type="read", error_message="❌ A database error occurr
     def decorator(func):
         @wraps(func)
         async def wrapper(*args, **kwargs):
-            global pool
             conn = None
             try:
                 pool = await get_pool(pool_type)
@@ -110,11 +109,8 @@ def with_connection(pool_type="read", error_message="❌ A database error occurr
                 # Ensure the connection is released only if it's still valid
                 if conn:
                     try:
-                        if not conn.closed:  # Check if the connection is still open
-                            await pool.release(conn)
-                            mysql_logger.info(f"🔓 Connection {conn} released back to the pool.")
-                        else:
-                            mysql_logger.warning(f"🔒 Connection {conn} was already closed, skipping release.")
+                        await pool.release(conn)
+                        mysql_logger.info(f"🔓 Connection {conn} released back to the pool.")
                     except KeyError:
                         mysql_logger.error(f"❌ Tried to release a connection not found in the pool: {conn}")
                     except Exception as e:
