@@ -6,7 +6,7 @@ from src.api.webhook import webhook_bp
 from src.config import PORT
 from src.worker import Worker
 from src.logger import main_logger
-from src.database.mysql_queries import initialize_pools, close_pools
+from src.database.mysql_queries import initialize_connection_pool, close_connection_pool
 
 app = Quart(__name__)
 app.register_blueprint(webhook_bp)
@@ -17,13 +17,13 @@ worker = Worker()
 
 @app.before_serving
 async def before_serving():
-    await initialize_pools()
+    await initialize_connection_pool()
     app.config['worker'] = worker
 
 
 @app.after_serving
 async def after_serving():
-    await close_pools()
+    await close_connection_pool()
 
 
 async def run_quart():
