@@ -92,30 +92,25 @@ def with_connection(pool_type="read", error_message="❌ A database error occurr
     def decorator(func):
         @wraps(func)
         async def wrapper(*args, **kwargs):
+            pool = None
             conn = None
             try:
                 pool = await get_pool(pool_type)
                 conn = await asyncio.wait_for(pool.acquire(), timeout=ACQUIRE_CONN_TIMEOUT)
-                async with conn:
-                    async with conn.cursor() as cur:
-                        return await func(cur, conn, *args, **kwargs)
-
+                async with conn.cursor() as cur:
+                    return await func(cur, conn, *args, **kwargs)
             except asyncio.TimeoutError:
                 mysql_logger.error("⏱️ Timed out while waiting to acquire a connection from the pool.")
             except Exception as e:
                 mysql_logger.error(error_message)
                 mysql_logger.error(f"Error message: {e}")
             finally:
-                # Ensure the connection is released only if it's still valid
                 if conn:
                     try:
                         await pool.release(conn)
-                        mysql_logger.info(f"🔓 Connection {conn} released back to the pool.")
-                    except KeyError:
-                        mysql_logger.error(f"❌ Tried to release a connection not found in the pool: {conn}")
+                        mysql_logger.info(f"🔓 Connection released back to the pool.")
                     except Exception as e:
                         mysql_logger.error(f"❌ Error releasing connection: {e}")
-
             return None
 
         return wrapper
@@ -134,8 +129,17 @@ async def create_test_connection(cur, conn, *args, **kwargs):
         raise RuntimeError("result[0] != 1")
 
 
-@with_connection(pool_type="write", error_message="❌ Failed to insert a new user.")
-async def insert_user(cur, conn, whatsapp_number_id: int) -> int | None:
+@with_connection(pool_type="write", error_message="❌ Failed to insert or retrieve a user.")
+async def insert_or_get_user(cur, conn, whatsapp_number_id: int) -> int | None:
+    # First, try to get the existing user
+    await cur.execute("SELECT id FROM users WHERE whatsapp_number_id = %s", (whatsapp_number_id,))
+    result = await cur.fetchone()
+
+    if result:
+        mysql_logger.info("➡️ Existing user retrieved successfully.")
+        return result[0]
+
+    # If user doesn't exist, insert a new one
     await cur.execute("INSERT INTO users (whatsapp_number_id) VALUES (%s)", (whatsapp_number_id,))
     await conn.commit()
 
@@ -144,20 +148,20 @@ async def insert_user(cur, conn, whatsapp_number_id: int) -> int | None:
         mysql_logger.info("➡️ New user inserted successfully.")
         return cur.lastrowid
     else:
-        raise RuntimeError("cur.rowcount == 0")
+        raise RuntimeError("Failed to insert new user")
 
 
-@with_connection(pool_type="read", error_message="❌ Failed to retrieve a user id.")
-async def get_user_id(cur, conn, whatsapp_number_id: int) -> int | None:
-    await cur.execute("SELECT id FROM users WHERE whatsapp_number_id = %s", (whatsapp_number_id,))
-    result = await cur.fetchone()
-
-    if result:
-        mysql_logger.info("➡️ User id retrieved successfully.")
-        return result[0]
-    else:
-        mysql_logger.info("🥷 Message was sent by the unknown user. No user_id for the provided whatsapp_number_id")
-        return None
+# @with_connection(pool_type="read", error_message="❌ Failed to retrieve a user id.")
+# async def get_user_id(cur, conn, whatsapp_number_id: int) -> int | None:
+#     await cur.execute("SELECT id FROM users WHERE whatsapp_number_id = %s", (whatsapp_number_id,))
+#     result = await cur.fetchone()
+#
+#     if result:
+#         mysql_logger.info("➡️ User id retrieved successfully.")
+#         return result[0]
+#     else:
+#         mysql_logger.info("🥷 Message was sent by the unknown user. No user_id for the provided whatsapp_number_id")
+#         return None
 
 
 @with_connection(pool_type="write", error_message="❌ Failed to insert an answer-query pair.")
@@ -208,8 +212,8 @@ async def get_recent_queries(cur, conn, whatsapp_number_id: int) -> list:
 
 
 async def insert_data_mysql(whatsapp_number_id: int, user_query: str, ai_answer: str):
-    user_id = await get_user_id(whatsapp_number_id)
-    if not user_id:
-        user_id = await insert_user(whatsapp_number_id)
-
-    await insert_query(user_id, user_query, ai_answer)
+    user_id = await insert_or_get_user(whatsapp_number_id)
+    if user_id:
+        await insert_query(user_id, user_query, ai_answer)
+    else:
+        mysql_logger.error("❌ Failed to insert or retrieve user.")
