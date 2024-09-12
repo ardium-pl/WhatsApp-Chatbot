@@ -27,7 +27,7 @@ async def run_quart():
     await serve(app, config)
 
 
-async def main():
+async def main(): # TODO delete
     main_logger.info("Starting the application")
     quart_task = asyncio.create_task(run_quart())
     await asyncio.gather(quart_task)

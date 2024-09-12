@@ -1,5 +1,5 @@
 import json
-from typing import Union
+from typing import Union, List
 from functools import wraps
 import asyncmy
 from asyncmy import Pool
@@ -7,61 +7,95 @@ from src.logger import mysql_logger
 from src.config import MYSQL_HOST, MYSQL_PORT, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE, POOL_CONNECT_TIMEOUT, \
     POOL_MIN_SIZE, POOL_MAX_SIZE, ACQUIRE_CONN_TIMEOUT
 import asyncio
+import random
 
-# global pool which will be initialized before serving http requests
-pool: Union[Pool, None] = None
+# Multiple pools for read and write operations
+read_pools: List[Pool] = []
+write_pools: List[Pool] = []
 
 
-async def initialize_connection_pool():
-    global pool
+async def initialize_connection_pools():
+    global read_pools, write_pools, pool
     try:
-        pool = await asyncmy.create_pool(
-            minsize=POOL_MIN_SIZE,
-            maxsize=POOL_MAX_SIZE,
-            # connect_timeout=POOL_CONNECT_TIMEOUT,
-            host=MYSQL_HOST,
-            port=int(MYSQL_PORT),
-            user=MYSQL_USER,
-            password=MYSQL_PASSWORD,
-            db=MYSQL_DATABASE
-        )
+        # Initialize multiple read pools
+        for i in range(3):  # You can choose the number of read pools you need
+            pool = await asyncmy.create_pool(
+                minsize=POOL_MIN_SIZE,
+                maxsize=POOL_MAX_SIZE,
+                host=MYSQL_HOST,
+                port=int(MYSQL_PORT),
+                user=MYSQL_USER,
+                password=MYSQL_PASSWORD,
+                db=MYSQL_DATABASE
+            )
+            read_pools.append(pool)
+            mysql_logger.info(f"✅ Read pool {i + 1} initialized.")
 
-        await create_test_connection()
-        return pool
+        # Initialize multiple write pools
+        for i in range(3):  # You can choose the number of write pools you need
+            pool = await asyncmy.create_pool(
+                minsize=POOL_MIN_SIZE,
+                maxsize=POOL_MAX_SIZE,
+                host=MYSQL_HOST,
+                port=int(MYSQL_PORT),
+                user=MYSQL_USER,
+                password=MYSQL_PASSWORD,
+                db=MYSQL_DATABASE
+            )
+            write_pools.append(pool)
+            mysql_logger.info(f"✅ Write pool {i + 1} initialized.")
+
+        await create_test_connection(random.choice(read_pools))
+        await create_test_connection(random.choice(write_pools))
+        return read_pools, write_pools
 
     except Exception as e:
-        mysql_logger.critical('❌ An error occurred during creating a connection pool.')
+        mysql_logger.critical('❌ An error occurred during creating connection pools.')
         mysql_logger.critical(f'Error message: {e}')
-        return None
+        return None, None
 
 
-async def close_connection_pool():
-    global pool
+async def close_connection_pools():
+    global read_pools, write_pools
     try:
-        if pool:
+        # Close read pools
+        for i, pool in enumerate(read_pools):
             pool.close()
             await pool.wait_closed()
-            mysql_logger.info("🚪️ MySQL connection pool closed.")
-            
+            mysql_logger.info(f"🚪️ Read pool {i + 1} closed.")
+
+        # Close write pools
+        for i, pool in enumerate(write_pools):
+            pool.close()
+            await pool.wait_closed()
+            mysql_logger.info(f"🚪️ Write pool {i + 1} closed.")
+
     except Exception as e:
-        mysql_logger.error("🚪️ ❌ An error occurred during closing the connection pool.")
+        mysql_logger.error("🚪️ ❌ An error occurred during closing the connection pools.")
         mysql_logger.error(f"Error message: {e}")
 
 
-async def get_pool():
-    if not pool:
-        raise RuntimeError("❌ MySQL connection pool not initialized")
-    return pool
+async def get_pool(pool_type: str):
+    if pool_type == 'read':
+        if not read_pools:
+            raise RuntimeError("❌ No read pools initialized")
+        return random.choice(read_pools)  # Select a random read pool
+    elif pool_type == 'write':
+        if not write_pools:
+            raise RuntimeError("❌ No write pools initialized")
+        return random.choice(write_pools)  # Select a random write pool
+    else:
+        raise ValueError(f"Unknown pool type: {pool_type}")
 
 
-def with_connection(error_message="❌ A database error occurred."):
+def with_connection(pool_type="read", error_message="❌ A database error occurred."):
     def decorator(func):
         @wraps(func)
         async def wrapper(*args, **kwargs):
             global pool
             conn = None
             try:
-                pool = await get_pool()
+                pool = await get_pool(pool_type)
                 conn = await asyncio.wait_for(pool.acquire(), timeout=ACQUIRE_CONN_TIMEOUT)
                 async with conn:
                     async with conn.cursor() as cur:
@@ -77,21 +111,24 @@ def with_connection(error_message="❌ A database error occurred."):
                     await pool.release(conn)
 
             return None
+
         return wrapper
+
     return decorator
 
 
-@with_connection(error_message="❌ Failed to establish a test connection. Pool probably isn't working correctly.")
+@with_connection(pool_type="read",
+                 error_message="❌ Failed to establish a test connection. Pool probably isn't working correctly.")
 async def create_test_connection(cur, conn):
     await cur.execute("SELECT 1")
     result = await cur.fetchone()
     if result[0] == 1:
-        mysql_logger.info("✅ Successfully established a test connection. Returning pool object.")
+        mysql_logger.info("✅ Successfully established a test connection.")
     else:
         raise RuntimeError("result[0] != 1")
 
 
-@with_connection(error_message="❌ Failed to insert a new user.")
+@with_connection(pool_type="write", error_message="❌ Failed to insert a new user.")
 async def insert_user(cur, conn, whatsapp_number_id: int) -> int | None:
     await cur.execute("INSERT INTO users (whatsapp_number_id) VALUES (%s)", (whatsapp_number_id,))
     await conn.commit()
@@ -104,7 +141,7 @@ async def insert_user(cur, conn, whatsapp_number_id: int) -> int | None:
         raise RuntimeError("cur.rowcount == 0")
 
 
-@with_connection(error_message="❌ Failed to retrieve a user id.")
+@with_connection(pool_type="read", error_message="❌ Failed to retrieve a user id.")
 async def get_user_id(cur, conn, whatsapp_number_id: int) -> int | None:
     await cur.execute("SELECT id FROM users WHERE whatsapp_number_id = %s", (whatsapp_number_id,))
     result = await cur.fetchone()
@@ -117,7 +154,7 @@ async def get_user_id(cur, conn, whatsapp_number_id: int) -> int | None:
         return None
 
 
-@with_connection(error_message="❌ Failed to insert an answer-query pair.")
+@with_connection(pool_type="write", error_message="❌ Failed to insert an answer-query pair.")
 async def insert_query(cur, conn, user_id: int, query: str, answer: str):
     await cur.execute("INSERT INTO queries (user_id, query, answer) VALUES (%s, %s, %s)",
                       (user_id, query, answer))
@@ -130,7 +167,7 @@ async def insert_query(cur, conn, user_id: int, query: str, answer: str):
         raise RuntimeError("cur.rowcount == 0")
 
 
-@with_connection(error_message="❌ Failed to retrieve recent queries form chat history.")
+@with_connection(pool_type="read", error_message="❌ Failed to retrieve recent queries form chat history.")
 async def get_recent_queries(cur, conn, whatsapp_number_id: int) -> list:
     await cur.execute("""
         SELECT q.query, q.answer, q.created_at
@@ -160,7 +197,7 @@ async def get_recent_queries(cur, conn, whatsapp_number_id: int) -> list:
 
         return chat_history
     else:
-        mysql_logger.info("😑 Retrieved chat history is emtpy.")
+        mysql_logger.info("😑 Retrieved chat history is empty.")
         return []
 
 
