@@ -12,7 +12,7 @@ import asyncio
 pool: Union[Pool, None] = None
 
 
-async def initialize_connection_pool() -> Pool | None:
+async def initialize_connection_pool():
     global pool
     try:
         pool = await asyncmy.create_pool(
@@ -48,8 +48,7 @@ async def close_connection_pool():
         mysql_logger.error(f"Error message: {e}")
 
 
-async def get_pool() -> Pool | None:
-    global pool
+async def get_pool():
     if not pool:
         raise RuntimeError("❌ MySQL connection pool not initialized")
     return pool
@@ -59,6 +58,8 @@ def with_connection(error_message="❌ A database error occurred."):
     def decorator(func):
         @wraps(func)
         async def wrapper(*args, **kwargs):
+            global pool
+            conn = None
             try:
                 pool = await get_pool()
 
@@ -72,6 +73,9 @@ def with_connection(error_message="❌ A database error occurred."):
             except Exception as e:
                 mysql_logger.error(error_message)
                 mysql_logger.error(f"Error message: {e}")
+            finally:
+                if conn:
+                    await pool.release(conn)
 
             return None
         return wrapper
