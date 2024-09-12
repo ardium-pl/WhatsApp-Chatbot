@@ -28,14 +28,14 @@ def prepare_context(results):
 def prepare_messages(context, question, chat_history=None):
     system_prompt = """You are a helpful assistant designed to provide information about the Euvic Services. 
     Try to answer questions based on the information provided in the data content 
-    below. If you are asked a question that isn't covered in the presentation, respond based on the given information 
+    below. If you are asked a question that isn't covered in the provided data, respond based on the given information 
     and your best judgment.
 
     You also have access to the recent chat history. Use this history to maintain context and provide more relevant 
     answers. The order of the chat is from the oldest to the newest, so the most recent chat is at the bottom.
     If the current question is related to previous questions, refer to the chat history for continuity.
 
-    Presentation content:
+    Data content:
     """
     messages = [
         {"role": "system", "content": system_prompt + context},
