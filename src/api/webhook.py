@@ -46,7 +46,7 @@ async def webhook():
                 # Use asyncio to run these potentially blocking operations concurrently
                 # -> TODO change to asyncio.task_group
                 await asyncio.gather(
-                    # WhatsAppClient.send_message(ai_answer, sender_phone_number),
+                    WhatsAppClient.send_message(ai_answer, sender_phone_number),
                     insert_data_mysql(sender_phone_number, user_query, ai_answer)
                 )
 
