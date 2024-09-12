@@ -107,8 +107,18 @@ def with_connection(pool_type="read", error_message="❌ A database error occurr
                 mysql_logger.error(error_message)
                 mysql_logger.error(f"Error message: {e}")
             finally:
+                # Ensure the connection is released only if it's still valid
                 if conn:
-                    await pool.release(conn)
+                    try:
+                        if not conn.closed:  # Check if the connection is still open
+                            await pool.release(conn)
+                            mysql_logger.info(f"🔓 Connection {conn} released back to the pool.")
+                        else:
+                            mysql_logger.warning(f"🔒 Connection {conn} was already closed, skipping release.")
+                    except KeyError:
+                        mysql_logger.error(f"❌ Tried to release a connection not found in the pool: {conn}")
+                    except Exception as e:
+                        mysql_logger.error(f"❌ Error releasing connection: {e}")
 
             return None
 
