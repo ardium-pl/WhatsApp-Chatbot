@@ -8,4 +8,4 @@ tenacity==9.0.0
 psutil==5.9.8
 aiohttp==3.9.3
 pytz==2024.1
-asyncmy
+asyncmy==0.2.9

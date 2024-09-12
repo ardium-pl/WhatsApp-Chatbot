@@ -18,7 +18,7 @@ async def initialize_connection_pool() -> Pool | None:
         pool = await asyncmy.create_pool(
             minsize=POOL_MIN_SIZE,
             maxsize=POOL_MAX_SIZE,
-            connect_timeout=POOL_CONNECT_TIMEOUT,
+            # connect_timeout=POOL_CONNECT_TIMEOUT,
             host=MYSQL_HOST,
             port=int(MYSQL_PORT),
             user=MYSQL_USER,
