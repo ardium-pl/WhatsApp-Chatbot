@@ -62,7 +62,6 @@ def with_connection(error_message="❌ A database error occurred."):
             conn = None
             try:
                 pool = await get_pool()
-
                 conn = await asyncio.wait_for(pool.acquire(), timeout=ACQUIRE_CONN_TIMEOUT)
                 async with conn:
                     async with conn.cursor() as cur:

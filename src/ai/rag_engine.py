@@ -26,8 +26,8 @@ def prepare_context(results):
 
 
 def prepare_messages(context, question, chat_history=None):
-    system_prompt = """You are a helpful assistant designed to provide information about the Euvic Services 
-    presentations / pdf files. Try to answer questions based on the information provided in the presentation content 
+    system_prompt = """You are a helpful assistant designed to provide information about the Euvic Services. 
+    Try to answer questions based on the information provided in the data content 
     below. If you are asked a question that isn't covered in the presentation, respond based on the given information 
     and your best judgment.
 
