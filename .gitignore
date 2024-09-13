@@ -5,7 +5,7 @@ __pycache__/
 
 # Virtual Environment
 venv/
-.env
+src/.env
 
 # IDEs and Editors
 .vscode/
@@ -24,7 +24,7 @@ Thumbs.db
 *.tmp
 
 # Environment variables
-.env
+src/.env
 
 # Database
 *.db
@@ -111,7 +111,7 @@ celerybeat.pid
 *.sage.py
 
 # Environments
-.env
+src/.env
 .venv
 env/
 venv/
