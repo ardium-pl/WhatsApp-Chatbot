@@ -151,19 +151,6 @@ async def insert_or_get_user(cur, conn, whatsapp_number_id: int) -> int | None:
         raise RuntimeError("Failed to insert new user")
 
 
-# @with_connection(pool_type="read", error_message="❌ Failed to retrieve a user id.")
-# async def get_user_id(cur, conn, whatsapp_number_id: int) -> int | None:
-#     await cur.execute("SELECT id FROM users WHERE whatsapp_number_id = %s", (whatsapp_number_id,))
-#     result = await cur.fetchone()
-#
-#     if result:
-#         mysql_logger.info("➡️ User id retrieved successfully.")
-#         return result[0]
-#     else:
-#         mysql_logger.info("🥷 Message was sent by the unknown user. No user_id for the provided whatsapp_number_id")
-#         return None
-
-
 @with_connection(pool_type="write", error_message="❌ Failed to insert an answer-query pair.")
 async def insert_query(cur, conn, user_id: int, query: str, answer: str):
     await cur.execute("INSERT INTO queries (user_id, query, answer) VALUES (%s, %s, %s)",
