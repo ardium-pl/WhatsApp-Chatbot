@@ -9,3 +9,4 @@ psutil==5.9.8
 aiohttp==3.9.3
 pytz==2024.1
 asyncmy
+cryptography
